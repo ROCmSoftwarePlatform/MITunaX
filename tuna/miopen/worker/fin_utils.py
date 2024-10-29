@@ -53,7 +53,7 @@ def fin_job(steps, dynamic_only, job, config, dbt):
     return_dict["config"] = compose_config_obj(config, ConfigType.batch_norm)
     return_dict['config']['direction'] = direction_t
   else:
-    return_dict["direction"] = int(INVERS_DIR_MAP[config.direction]),
+    return_dict["direction"] = int(INVERS_DIR_MAP[config.direction])
     return_dict["config"] = compose_config_obj(config, ConfigType.convolution)
 
   if job.solver:
