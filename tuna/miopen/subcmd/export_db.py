@@ -406,6 +406,27 @@ def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
   return perf_db_dict
 
 
+def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
+                    total_entries, logger: logging.Logger):
+  """Analyze perf_dv entry"""
+  if cfg_entry.id in cfg_map:
+    ins_cfg_id = cfg_map[cfg_entry.id]
+  else:
+    cfg_dict = get_sqlite_cfg_dict(perf_db_entry.fdb_key)
+
+    #filters cfg_dict by SQLITE_CONFIG_COLS, inserts cfg if missing
+    ins_cfg_id = get_config_sqlite(cnx, cfg_dict)
+    cfg_map[cfg_entry.id] = ins_cfg_id
+
+  pdb_dict = insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id)
+  num_perf += 1
+
+  if num_perf % (total_entries // 10) == 0:
+    cnx.commit()
+    logger.info("PDB count: %s, mysql cfg: %s, pdb: %s", num_perf, cfg_entry.id,
+                pdb_dict)
+
+
 def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
                logger: logging.Logger):
   """ export perf db from mysql to sqlite """
@@ -428,25 +449,57 @@ def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
   return local_path
 
 
-def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
-                    total_entries, logger: logging.Logger):
-  """Analyze perf_dv entry"""
-  if cfg_entry.id in cfg_map:
-    ins_cfg_id = cfg_map[cfg_entry.id]
-  else:
-    cfg_dict = get_sqlite_cfg_dict(perf_db_entry.fdb_key)
+def build_miopen_pdb(query, logger: logging.Logger) -> OrderedDict:
+  """return dict with key: fdb_key, val: list of fdb entries"""
+  find_db: OrderedDict = OrderedDict()
+  solvers: Dict[str, Dict[str, Any]] = {}
+  db_entries = query.all()
+  total_entries = len(db_entries)
+  logger.info("pdb query returned: %s", total_entries)
 
-    #filters cfg_dict by SQLITE_CONFIG_COLS, inserts cfg if missing
-    ins_cfg_id = get_config_sqlite(cnx, cfg_dict)
-    cfg_map[cfg_entry.id] = ins_cfg_id
+  for fdb_entry, _ in db_entries:
+    if add_entry_to_solvers(fdb_entry, solvers, logger):
+      fdb_key = fdb_entry.fdb_key
+      lst = find_db.get(fdb_key)
+      if not lst:
+        find_db[fdb_key] = [fdb_entry]
+      else:
+        lst.append(fdb_entry)
 
-  pdb_dict = insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id)
-  num_perf += 1
+  return find_db
 
-  if num_perf % (total_entries // 10) == 0:
-    cnx.commit()
-    logger.info("PDB count: %s, mysql cfg: %s, pdb: %s", num_perf, cfg_entry.id,
-                pdb_dict)
+
+def write_pdb(arch, num_cu, ocl, perf_db, filename=None):
+  """
+  Serialize perf_db map to plain text file in MIOpen format
+  """
+  file_name = get_filename(arch, num_cu, filename, ocl, DB_Type.PERF_DB)
+
+  require_id_solvers()
+  with open(file_name, 'w') as out:  # pylint: disable=unspecified-encoding
+    for key, solvers in sorted(perf_db.items(), key=lambda kv: kv[0]):
+      solvers.sort(
+          #key=lambda x: (float(x.kernel_time), ID_SOLVER_MAP[x.solver]))
+          key=lambda x: (ID_SOLVER_MAP[x.solver]))
+      lst = []
+      # for alg_lib, solver_id, kernel_time, workspace_sz in solvers:
+      for rec in solvers:
+        # pylint: disable-next=consider-using-f-string ; more reable
+        lst.append('{slv}:{params}'.format(slv=ID_SOLVER_MAP[rec.solver],
+                                           params=rec.params))
+      out.write(f"{key}={';'.join(lst)}\n")
+  return file_name
+
+
+def export_pdb2(dbt: MIOpenDBTables, args: argparse.Namespace,
+               logger: logging.Logger):
+  """ export perf db from mysql to txt file """
+  query = get_pdb_query(dbt, args, logger)
+  miopen_pdb = build_miopen_pdb(query, logger)
+
+  logger.info("write pdb to file.")
+  return write_pdb(args.arch, args.num_cu, args.opencl, miopen_pdb,
+                   args.filename)
 
 
 def run_export_db(args: argparse.Namespace, logger: logging.Logger):
