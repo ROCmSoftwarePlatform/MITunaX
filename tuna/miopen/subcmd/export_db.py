@@ -27,6 +27,8 @@
 """Module to export find_db to txt file"""
 import sqlite3
 import os
+import tempfile
+import json
 from collections import OrderedDict
 from typing import Dict, Any, Optional, Union, List, Tuple
 import base64
@@ -43,7 +45,9 @@ from tuna.miopen.db.solver import get_id_solvers
 from tuna.utils.logger import setup_logger
 from tuna.miopen.utils.analyze_parse_db import get_config_sqlite, insert_solver_sqlite
 from tuna.miopen.utils.analyze_parse_db import get_sqlite_cfg_dict
+from tuna.miopen.utils.metadata import INVERS_DIR_MAP
 from tuna.miopen.parse_miopen_args import get_export_db_parser
+from tuna.miopen.worker.fin_utils import compose_config_obj
 
 DIR_NAME: dict = {'F': 'Fwd', 'B': 'BwdData', 'W': 'BwdWeights'}
 
@@ -89,11 +93,60 @@ def get_filename(arch: str,
   elif db_type == DB_Type.KERN_DB:
     extension = '.kdb'
   else:
-    extension = ".db"
+    extension = ".db.txt"
 
   final_name = f"{final_name}{extension}"
 
   return final_name
+
+
+def fin_nc_job(cfg_lst):
+  """Construct a fin network_config job from a config
+  """
+  #arch and num_cu are required by fin, but unused for this command
+  job_list = []
+  for config in cfg_lst:
+    job = {
+        "steps": ["network_config"],
+        "arch": 'gfx908',
+        "num_cu": 120,
+        "config_tuna_id": config.id,
+        "direction": int(INVERS_DIR_MAP[config.direction]),
+        "config": compose_config_obj(config)
+    }
+    job_list.append(job)
+
+  return job_list
+
+
+def fin_network_config(config_lst, logger):
+  """rerieve network_config from fin for config """
+  _, fin_ifile = tempfile.mkstemp(suffix='.json')
+  _, fin_ofile = tempfile.mkstemp(suffix='.json')
+
+  with open(fin_ifile, 'w') as in_file:
+    in_file.write(json.dumps(fin_nc_job(config_lst), indent=2))
+
+  fin_cmd = f"/opt/rocm/bin/fin -i {fin_ifile} -o {fin_ofile}"
+  logger.info('Executing fin cmd: %s', fin_cmd)
+
+  os.system(fin_cmd)
+
+  result = None
+  with open(fin_ofile, 'r') as out_file:  # pylint: disable=unspecified-encoding
+    try:
+      result = json.load(out_file)
+    except Exception as err:
+      logger.error('Unable to load fin json file %s', err)
+      for line in out_file:
+        logger.error(line)
+
+  network_config_dict = {}
+  for elem in result:
+    if "network_config" in elem.keys():
+      network_config_dict[elem['config_tuna_id']] = elem['network_config']
+
+  return network_config_dict
 
 
 def get_base_query(dbt: MIOpenDBTables, args: argparse.Namespace,
@@ -451,22 +504,30 @@ def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
 
 def build_miopen_pdb(query, logger: logging.Logger) -> OrderedDict:
   """return dict with key: fdb_key, val: list of fdb entries"""
-  find_db: OrderedDict = OrderedDict()
+  perf_db: OrderedDict = OrderedDict()
   solvers: Dict[str, Dict[str, Any]] = {}
+  nc_key_map: Dict[str, str] = {}
   db_entries = query.all()
   total_entries = len(db_entries)
   logger.info("pdb query returned: %s", total_entries)
 
-  for fdb_entry, _ in db_entries:
-    if add_entry_to_solvers(fdb_entry, solvers, logger):
-      fdb_key = fdb_entry.fdb_key
-      lst = find_db.get(fdb_key)
-      if not lst:
-        find_db[fdb_key] = [fdb_entry]
-      else:
-        lst.append(fdb_entry)
+  cfg_lst = []
+  for _, config in db_entries:
+    if config not in cfg_lst:
+      cfg_lst.append(config)
 
-  return find_db
+  ntwk_cfg_map = fin_network_config(cfg_lst, logger)
+
+  for pdb_entry, config in db_entries:
+    if add_entry_to_solvers(pdb_entry, solvers, logger):
+      nc_key = ntwk_cfg_map[config.id]
+      lst = perf_db.get(nc_key)
+      if not lst:
+        perf_db[nc_key] = [pdb_entry]
+      else:
+        lst.append(pdb_entry)
+
+  return perf_db
 
 
 def write_pdb(arch, num_cu, ocl, perf_db, filename=None):
@@ -491,7 +552,7 @@ def write_pdb(arch, num_cu, ocl, perf_db, filename=None):
   return file_name
 
 
-def export_pdb2(dbt: MIOpenDBTables, args: argparse.Namespace,
+def export_pdb_txt(dbt: MIOpenDBTables, args: argparse.Namespace,
                logger: logging.Logger):
   """ export perf db from mysql to txt file """
   query = get_pdb_query(dbt, args, logger)
@@ -523,7 +584,7 @@ def run_export_db(args: argparse.Namespace, logger: logging.Logger):
   elif args.kern_db:
     result_file = export_kdb(dbt, args, logger)
   elif args.perf_db:
-    result_file = export_pdb(dbt, args, logger)
+    result_file = export_pdb_txt(dbt, args, logger)
 
   print(result_file)
 
