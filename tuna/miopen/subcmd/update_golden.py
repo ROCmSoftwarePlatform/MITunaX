@@ -39,6 +39,7 @@ from tuna.miopen.db.session import Session
 from tuna.utils.db_utility import session_retry
 from tuna.utils.logger import setup_logger
 from tuna.db_engine import ENGINE
+from tuna.miopen.utils.config_type import ConfigType
 
 
 def arg_update_golden(args: argparse.Namespace, logger: logging.Logger):
@@ -110,18 +111,19 @@ def verify_no_duplicates(entries, logger: logging.Logger):
   return True
 
 
-def get_perf_str(args: argparse.Namespace, table_name):
+def get_perf_str(dbt: MIOpenDBTables, args: argparse.Namespace, table_name):
   """Create perf table SQL query and return"""
+  golden_table = dbt.golden_table.__tablename__
   new_table = f"""
   create table {table_name} as select a.config, a.num_cu, a.arch, b.k1 as k1, c.k1 as k2,
-    d.k1 as k3, c.k1-b.k1 as gv4_5, d.k1-c.k1 as gv5_6 from conv_golden a
-    inner join(select config, min(kernel_time) as k1, arch, num_cu from conv_golden
+    d.k1 as k3, c.k1-b.k1 as gv4_5, d.k1-c.k1 as gv5_6 from {golden_table} a
+    inner join(select config, min(kernel_time) as k1, arch, num_cu from {golden_table}
     where golden_miopen_v={args.golden_v-2} and kernel_time!=-1 group by config, arch, num_cu)
       as b on a.config=b.config and a.arch=b.arch and a.num_cu=b.num_cu
-    inner join(select config, min(kernel_time) as k1, arch, num_cu from conv_golden
+    inner join(select config, min(kernel_time) as k1, arch, num_cu from {golden_table}
     where golden_miopen_v={args.golden_v-1} and kernel_time!=-1 group by config, arch, num_cu)
       as c on a.config=c.config and a.arch=c.arch and a.num_cu=c.num_cu
-    inner join(select config, min(kernel_time) as k1, arch, num_cu from conv_golden
+    inner join(select config, min(kernel_time) as k1, arch, num_cu from {golden_table}
     where golden_miopen_v={args.golden_v} and kernel_time!=-1 group by config, arch, num_cu)
       as d on a.config=d.config and a.arch=d.arch and a.num_cu=d.num_cu
   where a.golden_miopen_v={args.golden_v} group by a.config, a.arch, a.num_cu, b.k1, c.k1, d.k1;
@@ -129,22 +131,26 @@ def get_perf_str(args: argparse.Namespace, table_name):
   return new_table
 
 
-def create_perf_table(args: argparse.Namespace, logger: logging.Logger):
+def create_perf_table(dbt: MIOpenDBTables, args: argparse.Namespace,
+                      logger: logging.Logger):
   """Create new perf_table"""
+  prefix = "conv"
+  if args.config_type == ConfigType.batch_norm:
+    prefix = "bn"
   if args.golden_v == 0:
-    table_name = "conv_gv0"
+    table_name = f"{prefix}_gv0"
   elif args.golden_v == 1:
-    table_name = "conv_gv10"
+    table_name = f"{prefix}_gv10"
   else:
     vm1 = str(args.golden_v - 1)
     vm2 = str(args.golden_v - 2)
-    table_name = f"conv_gv{vm2}{vm1}{args.golden_v}"
+    table_name = f"{prefix}_gv{vm2}{vm1}{args.golden_v}"
   print(table_name)
   with ENGINE.connect() as conn:
     try:
       conn.execute(f'drop table if exists {table_name}')
       logger.info('Creating new performance table %s', table_name)
-      conn.execute(get_perf_str(args, table_name))
+      conn.execute(get_perf_str(dbt, args, table_name))
       logger.info('Done creating new performance table %s', table_name)
     except OperationalError as oerr:
       logger.info('%s \n', oerr)
@@ -154,16 +160,18 @@ def create_perf_table(args: argparse.Namespace, logger: logging.Logger):
 
 
 def gold_base_update(session: DbSession,
+                     dbt: MIOpenDBTables,
                      gold_v: int,
                      base_gold_v: int,
                      logger: logging.Logger,
                      overwrite: bool = False):
-  """copy over data in conv_golden from previous golden version"""
+  """copy over data in golden from previous golden version"""
+  golden_table = dbt.golden_table.__tablename__
   if overwrite:
     logger.info("Updating golden version %s -> %s.", base_gold_v, gold_v)
-    update_q = "update conv_golden as cg inner join conv_golden as ps on cg.config=ps.config"\
-    " and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib and cg.opencl=ps.opencl"\
-    " and cg.solver=ps.solver and ps.arch=cg.arch and ps.num_cu=cg.num_cu"\
+    update_q = f"update {golden_table} as cg inner join {golden_table} as ps on "\
+    "cg.config=ps.config and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib and "\
+    "cg.opencl=ps.opencl and cg.solver=ps.solver and ps.arch=cg.arch and ps.num_cu=cg.num_cu"\
     " set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz"\
     ", cg.kernel_time=ps.kernel_time, cg.kernel_group=ps.kernel_group, cg.session=ps.session"\
     f" where cg.golden_miopen_v={gold_v} and ps.golden_miopen_v={base_gold_v} and ps.valid=1"\
@@ -172,11 +180,11 @@ def gold_base_update(session: DbSession,
     session.execute(update_q)
 
   logger.info("Inserting golden version %s -> %s.", base_gold_v, gold_v)
-  insert_q = "insert ignore into conv_golden (valid, golden_miopen_v, arch, num_cu, config"\
+  insert_q = f"insert ignore into {golden_table} (valid, golden_miopen_v, arch, num_cu, config"\
   ", fdb_key, params, kernel_time, workspace_sz, alg_lib, opencl, kernel_group, session, solver)"\
   f" select valid, {gold_v}, arch, num_cu, config, fdb_key, params, kernel_time"\
   ", workspace_sz, alg_lib, opencl, kernel_group, session, solver"\
-  f" from conv_golden where golden_miopen_v={base_gold_v} and valid=1 and kernel_time>=0;"
+  f" from {golden_table} where golden_miopen_v={base_gold_v} and valid=1 and kernel_time>=0;"
   logger.info(insert_q)
   session.execute(insert_q)
   session.commit()
@@ -185,16 +193,18 @@ def gold_base_update(session: DbSession,
 
 
 def gold_session_update(session: DbSession,
+                        dbt: MIOpenDBTables,
                         gold_v: int,
                         tune_s: int,
                         logger: logging.Logger,
                         overwrite: bool = True):
-  """copy data to conv_golden from tuning session in conv_find_db"""
+  """copy data to golden_table from tuning session in find_db"""
+  golden_table = dbt.golden_table.__tablename__
   if overwrite:
     logger.info("Gold %s Update with session %s.", gold_v, tune_s)
-    update_q = "update conv_golden as cg inner join conv_find_db as ps on cg.config=ps.config"\
-    " and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib and cg.opencl=ps.opencl"\
-    " and cg.solver=ps.solver"\
+    update_q = f"update {golden_table} as cg inner join {dbt.find_db_table.__tablename__} as ps on"\
+    " cg.config=ps.config and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib"\
+    "and cg.opencl=ps.opencl and cg.solver=ps.solver"\
     " inner join session as s on ps.session=s.id and s.arch=cg.arch and s.num_cu=cg.num_cu"\
     " set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz"\
     ", cg.kernel_time=ps.kernel_time, cg.kernel_group=ps.kernel_group, cg.session=ps.session"\
@@ -203,11 +213,11 @@ def gold_session_update(session: DbSession,
     session.execute(update_q)
 
   logger.info("Gold %s Insert session %s.", gold_v, tune_s)
-  insert_q = "insert ignore into conv_golden (valid, golden_miopen_v, arch, num_cu, config"\
+  insert_q = f"insert ignore into {golden_table} (valid, golden_miopen_v, arch, num_cu, config"\
   ", fdb_key, params, kernel_time, workspace_sz, alg_lib, opencl, kernel_group, session, solver)"\
   f" select cfd.valid, {gold_v}, arch, num_cu, config, fdb_key, params, kernel_time"\
   ", workspace_sz, alg_lib, opencl, kernel_group, session, solver"\
-  " from conv_find_db as cfd inner join session as s on cfd.session=s.id"\
+  f" from {dbt.find_db.__tablename__} as cfd inner join session as s on cfd.session=s.id"\
   f" where session={tune_s} and cfd.valid=1 and kernel_time>=0;"
   session.execute(insert_q)
   session.commit()
@@ -229,7 +239,7 @@ def run_update_golden(args: argparse.Namespace, logger: logging.Logger):
     if args.base_golden_v:
 
       def actuator1(func):
-        return func(session, args.golden_v, args.base_golden_v, logger,
+        return func(session, dbt, args.golden_v, args.base_golden_v, logger,
                     args.overwrite)
 
       session_retry(session, gold_base_update, functools.partial(actuator1),
@@ -244,11 +254,12 @@ def run_update_golden(args: argparse.Namespace, logger: logging.Logger):
       session_retry(session, gold_session_update, functools.partial(actuator2),
                     logger)
 
-  logger.info('Finished Updating conv_golden %s', args.golden_v)
+  logger.info(
+      f"Finished Updating {dbt.golden_table.__tablename__}: {args.golden_v}")
 
   if args.create_perf_table:
-    logger.info('Updating conv perf DB table')
-    create_perf_table(args, logger)
+    logger.info('Updating perf DB table')
+    create_perf_table(dbt, args, logger)
 
 
 def main():

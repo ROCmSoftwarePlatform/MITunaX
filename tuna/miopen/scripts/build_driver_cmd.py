@@ -75,6 +75,7 @@ def main():
         precision: str
         direction: int
         fds, vals, precision, direction = parse_pdb_key(elem[0])
+        #DEPRECATED
         cmd: str = build_driver_cmd(fds, vals, precision, direction)
         outstr = f'"{cmd}",{elem[1]}'
       else:

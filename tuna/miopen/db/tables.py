@@ -30,6 +30,7 @@ from tuna.miopen.db.batch_norm_tables import BNBenchmark, BNConfig
 from tuna.miopen.db.batch_norm_tables import BNConfigTags, BNFinJobCache
 from tuna.miopen.db.batch_norm_tables import BNJob, BNJobCache, BNKernelCache
 from tuna.miopen.db.batch_norm_tables import BNSolverApplicability
+from tuna.miopen.db.bn_golden_tables import BNGolden
 from tuna.miopen.db.find_db import ConvolutionFindDB, BNFindDB
 from tuna.miopen.db.convolutionjob_tables import ConvolutionJob
 from tuna.miopen.db.convolutionjob_tables import ConvolutionConfig
@@ -97,6 +98,7 @@ class MIOpenDBTables(DBTablesInterface):
       self.fin_cache_table = BNFinJobCache
       self.kernel_cache = BNKernelCache
       self.benchmark = BNBenchmark
+      self.golden_table = BNGolden
     else:
       self.job_table = ConvolutionJob
       self.config_table = ConvolutionConfig

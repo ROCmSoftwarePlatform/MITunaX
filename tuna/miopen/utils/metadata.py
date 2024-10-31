@@ -224,11 +224,15 @@ TENSOR_PRECISION = {
     'convint8': 'INT8',
     'bnorm': 'FP32',
     'bnormfp16': 'FP16',
-    'bnormbfp16': 'BFP16'
+    'bnormbfp16': 'BFP16',
+    'bnormfp16fp32': 'FP16FP32',
+    'bnormbfp16fp32': 'BFP16FP32'
 }
 
 SUPPORTED_CONV_CMDS = ['conv', 'convfp16', 'convbfp16', 'convint8']
-SUPPORTED_BN_CMDS = ['bnorm', 'bnormfp16', 'bnormbfp16']
+SUPPORTED_BN_CMDS = [
+    'bnorm', 'bnormfp16', 'bnormbfp16', 'bnormfp16fp32', 'bnormbfp16fp32'
+]
 
 CONV_CONFIG_COLS = [
     'batchsize', 'spatial_dim', 'pad_h', 'pad_w', 'pad_d', 'conv_stride_h',
@@ -595,7 +599,10 @@ PREC_TO_CMD = {
     },
     ConfigType.batch_norm: {
         'FP32': 'bnorm',
-        'FP16': 'bnormfp16'
+        'FP16': 'bnormfp16',
+        'FP16FP32': 'bnormFP16FP32',
+        'BFP16': 'bnormbfp16',
+        'BFP16FP32': 'bnormBFP16FP32'
     }
 }
 CMD_TO_PREC = {
@@ -604,7 +611,10 @@ CMD_TO_PREC = {
     'convbfp16': 'BF16',
     'convint8': 'INT8',
     'bnorm': 'FP32',
-    'bnormfp16': 'FP16'
+    'bnormfp16': 'FP16',
+    'bnormbfp16': 'BFP16',
+    'bnormfp16fp32': 'FP16FP32',
+    'bnormBFP16FP32': 'BFP16FP32'
 }
 
 MYSQL_CONFIG_COLS = [

@@ -31,6 +31,7 @@ from re import search
 from tuna.miopen.utils.metadata import CONV_SKIP_ARGS
 from tuna.miopen.utils.metadata import TABLE_COLS_FUSION_MAP, TABLE_COLS_CONV_MAP, TABLE_COLS_BN_MAP
 from tuna.miopen.utils.metadata import INVERS_DIR_MAP, FDS_3D, FDS_2D, DIR_MAP
+from tuna.miopen.utils.metadata import SUPPORTED_BN_CMDS, SUPPORTED_CONV_CMDS
 from tuna.utils.logger import setup_logger
 from tuna.miopen.utils.helper import config_set_defaults
 from tuna.miopen.utils.metadata import CMD_TO_PREC, PREC_TO_CMD
@@ -177,6 +178,7 @@ def parse_3d(key, group_count):  #pylint: disable=too-many-locals
   return vals_3d, precision, direction
 
 
+#DEPRECATED
 def build_driver_cmd(fds, vals, precision, direction):
   """make a driver command for a value set"""
   arg_names = fds[:]
@@ -393,7 +395,7 @@ def compose_fds(fds, tok, line):
     if tok1 in CONV_SKIP_ARGS:
       continue
     tok2 = tok2.strip()
-    if fds['cmd'] in ['conv', 'convfp16', 'convbfp16']:
+    if fds['cmd'] in SUPPORTED_CONV_CMDS:
       tok1 = get_fd_name(tok1, TABLE_COLS_CONV_MAP)
       if conv_arg_valid(tok1[0], tok2):
         fds[tok1[0]] = tok2
@@ -404,7 +406,7 @@ def compose_fds(fds, tok, line):
       tok1 = get_fd_name(tok1, TABLE_COLS_FUSION_MAP)
       if arg_valid(tok1[0], tok2):
         fds[tok1[0]] = tok2
-    elif fds['cmd'] in ['bnorm', 'bnormfp16']:
+    elif fds['cmd'] in SUPPORTED_BN_CMDS:
       tok1 = get_fd_name(tok1, TABLE_COLS_BN_MAP)
       if arg_valid(tok1[0], tok2):
         fds[tok1[0]] = tok2
