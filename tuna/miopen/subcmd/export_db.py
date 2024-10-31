@@ -100,7 +100,7 @@ def get_filename(arch: str,
   return final_name
 
 
-def fin_nc_job(cfg_lst):
+def fin_net_cfg_job(cfg_lst):
   """Construct a fin network_config job from a config
   """
   #arch and num_cu are required by fin, but unused for this command
@@ -119,13 +119,13 @@ def fin_nc_job(cfg_lst):
   return job_list
 
 
-def fin_network_config(config_lst, logger):
+def fin_db_key(config_lst, logger):
   """rerieve network_config from fin for config """
   _, fin_ifile = tempfile.mkstemp(suffix='.json')
   _, fin_ofile = tempfile.mkstemp(suffix='.json')
 
   with open(fin_ifile, 'w') as in_file:
-    in_file.write(json.dumps(fin_nc_job(config_lst), indent=2))
+    in_file.write(json.dumps(fin_net_cfg_job(config_lst), indent=2))
 
   fin_cmd = f"/opt/rocm/bin/fin -i {fin_ifile} -o {fin_ofile}"
   logger.info('Executing fin cmd: %s', fin_cmd)
@@ -141,12 +141,12 @@ def fin_network_config(config_lst, logger):
       for line in out_file:
         logger.error(line)
 
-  network_config_dict = {}
+  db_key_dict = {}
   for elem in result:
-    if "network_config" in elem.keys():
-      network_config_dict[elem['config_tuna_id']] = elem['network_config']
+    if "db_key" in elem.keys():
+      db_key_dict[elem['config_tuna_id']] = elem['db_key']
 
-  return network_config_dict
+  return db_key_dict
 
 
 def get_base_query(dbt: MIOpenDBTables, args: argparse.Namespace,
@@ -506,7 +506,7 @@ def build_miopen_pdb(query, logger: logging.Logger) -> OrderedDict:
   """return dict with key: fdb_key, val: list of fdb entries"""
   perf_db: OrderedDict = OrderedDict()
   solvers: Dict[str, Dict[str, Any]] = {}
-  nc_key_map: Dict[str, str] = {}
+  db_key_map: Dict[str, str] = {}
   db_entries = query.all()
   total_entries = len(db_entries)
   logger.info("pdb query returned: %s", total_entries)
@@ -516,14 +516,14 @@ def build_miopen_pdb(query, logger: logging.Logger) -> OrderedDict:
     if config not in cfg_lst:
       cfg_lst.append(config)
 
-  ntwk_cfg_map = fin_network_config(cfg_lst, logger)
+  db_key_map = fin_db_key(cfg_lst, logger)
 
   for pdb_entry, config in db_entries:
     if add_entry_to_solvers(pdb_entry, solvers, logger):
-      nc_key = ntwk_cfg_map[config.id]
-      lst = perf_db.get(nc_key)
+      db_key = db_key_map[config.id]
+      lst = perf_db.get(db_key)
       if not lst:
-        perf_db[nc_key] = [pdb_entry]
+        perf_db[db_key] = [pdb_entry]
       else:
         lst.append(pdb_entry)
 
