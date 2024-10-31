@@ -28,7 +28,7 @@
 """
 
 from tuna.miopen.utils.metadata import NCHW_LAYOUT, NHWC_LAYOUT, NCDHW_LAYOUT, NDHWC_LAYOUT
-from tuna.miopen.utils.metadata import PREC_TO_CMD, INVERS_DIR_MAP, DIR_MAP
+from tuna.miopen.utils.metadata import PREC_TO_CMD, INVERS_DIR_MAP  #, DIR_MAP
 from tuna.utils.logger import setup_logger
 from tuna.utils.utility import arch2targetid
 from tuna.miopen.utils.config_type import ConfigType
