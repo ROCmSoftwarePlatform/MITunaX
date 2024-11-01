@@ -8,9 +8,9 @@ echo "${util_lib}"
 library "${util_lib}"
 
 def initSession(){
-  backend = "HIPNOGPU"
+  backend = "HIP"
   def tuna_docker
-  def tuna_docker_name = utils.getDockerName("HIPNOGPU")
+  def tuna_docker_name = utils.getDockerName("HIP")
   def build_args = " --network host --build-arg ROCMVERSION=${params.rocm_version} --build-arg OSDB_BKC_VERSION=${params.osdb_bkc_version} --build-arg BUILD_MIOPEN_DEPS=${params.build_miopen_deps} --build-arg BACKEND=${backend} --build-arg MIOPEN_BRANCH=${miopen_branch_name} --build-arg DB_NAME=${params.db_name} --build-arg DB_USER_NAME=${db_user} --build-arg DB_USER_PASSWORD=${db_password} --build-arg DB_HOSTNAME=${db_host} --build-arg MIOPEN_USE_MLIR=${params.use_mlir}"
 
   if(params.base_image != '')
