@@ -190,7 +190,7 @@ def add_jobs(args: argparse.Namespace, dbt: MIOpenDBTables,
           counts += 1
           if do_commit:
             session.commit()
-          elif counts % 1000 == 0
+          elif counts % 1000 == 0:
             session.commit()
         except IntegrityError as err:
           session.rollback()
