@@ -233,13 +233,13 @@ def finFindCompileEnqueue(){
 
         sh "printenv"
         def num_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn';").toInteger()
-        def pid = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
+        def pid_bn = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
         sh "cat ${celery_log}"
 
         sh "printenv"
         sh "./tuna/go_fish.py miopen --fin_steps miopen_find_compile -l finFind_${branch_id}_bn --session_id ${sesh1} -C batch_norm --enqueue_only"
 
-        sh "kill -9 ${pid}"
+        sh "kill -9 ${pid_bn}"
         sh "cat ${celery_log}"
         def num_compiled_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn' AND state = 'compiled';").toInteger()
         sh "echo ${num_compiled_jobs_bn} == ${num_jobs_bn}"
