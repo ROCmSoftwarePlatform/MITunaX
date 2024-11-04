@@ -219,6 +219,34 @@ def finFindCompileEnqueue(){
         if (num_compiled_jobs != num_jobs){
             error("Unable to compile find jobs using Fin")
         }
+
+
+
+        runsql("delete from bn_job;")
+        runsql("alter table bn_job AUTO_INCREMENT=1;")
+
+
+        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_bn -f utils/configs/batch_norm.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
+        def num_cfg_bn = runsql("SELECT count(*) from bn_config;")
+        println "Count(*) bn_config table: ${num_cfg}"
+        sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id}_bn -t recurrent_${branch_id}_bn --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh1} ${job_lim} -C batch_norm"
+
+        sh "printenv"
+        def num_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn';").toInteger()
+        def pid = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
+        sh "cat ${celery_log}"
+
+        sh "printenv"
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_compile -l finFind_${branch_id}_bn --session_id ${sesh1} -C batch_norm --enqueue_only"
+
+        sh "kill -9 ${pid}"
+        sh "cat ${celery_log}"
+        def num_compiled_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn' AND state = 'compiled';").toInteger()
+        sh "echo ${num_compiled_jobs_bn} == ${num_jobs_bn}"
+        if (num_compiled_jobs_bn != num_jobs_bn){
+            error("Unable to compile BN find jobs using Fin")
+        }
+
     }
 }
 

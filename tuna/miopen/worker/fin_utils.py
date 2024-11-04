@@ -120,7 +120,6 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
     return_config = compose_config_obj_conv(config, config_type)
   else:
     return_config = compose_config_obj_bn(config, config_type)
-  exit()
   #if 'input_t' in config.__dict__.keys():
   #  input_t_dict = {'input_t': config.input_t.to_dict()}
   #  cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
@@ -144,8 +143,6 @@ def compose_config_obj_bn(config, config_type):
   #return_config['direction'] = DIR_MAP[direction_t]
   return_config['direction'] = direction_t
   return_config.pop('input_t')
-  print(return_config)
-  exit()
 
   return return_config
 
