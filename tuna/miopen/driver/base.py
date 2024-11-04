@@ -119,13 +119,8 @@ class MIOpenDriver(DriverBase):
     return True
 
   def construct_driver_from_db(self, db_obj: Any) -> bool:
-    """Takes a <>_config row and returns a driver cmd"""
-    LOGGER.info('Processing db_row: %s', db_obj.to_dict())
-    #common tensor among convolution and batch norm
-    self.__decompose_input_t(db_obj)
-    self.parse_row(db_obj)
-
-    return True
+    """Takes a db row of a configuration and returns the string representation"""
+    raise NotImplementedError("Not implemented")
 
   @staticmethod
   def get_tensor_id(session: Session, tensor_dict: dict) -> int:
@@ -208,35 +203,40 @@ class MIOpenDriver(DriverBase):
     i_dict['num_dims'] = self.num_dims
     i_dict['dim0'] = 1
 
-    if self.in_layout in ('NCHW', 'NCDHW'):
+    # conv: self.in_layout, BN: self.layout
+    if (self.in_layout or self.layout) in ('NCHW', 'NCDHW'):
       i_dict['dim1'] = self.in_channels
       i_dict['dim2'] = self.in_d
       i_dict['dim3'] = self.in_h
       i_dict['dim4'] = self.in_w
-      i_dict['layout'] = self.in_layout
-    elif self.in_layout in ('NHWC', 'NDHWC'):
+      i_dict['layout'] = self.in_layout if self.in_layout else self.layout
+    elif (self.in_layout or self.layout) in ('NHWC', 'NDHWC'):
       i_dict['dim1'] = self.in_d
       i_dict['dim2'] = self.in_h
       i_dict['dim3'] = self.in_w
       i_dict['dim4'] = self.in_channels
-      i_dict['layout'] = self.in_layout
+      i_dict['layout'] = self.in_layout if self.in_layout else self.layout
 
     return i_dict
 
-  def __decompose_input_t(self, db_obj: Any) -> bool:
+  def decompose_input_t(self, db_obj: Any) -> bool:
     """Use input_tensor to assign local variables to build driver cmd """
     #pylint: disable=attribute-defined-outside-init
 
     self.set_cmd(db_obj.input_t.data_type)
     self.num_dims = db_obj.input_t.num_dims
-    self.in_layout = db_obj.input_t.layout
+    # conv: self.in_layout, BN: self.layout
+    if self.in_layout:
+      self.in_layout = db_obj.input_t.layout
+    else:
+      self.layout = db_obj.input_t.layout
 
-    if self.in_layout in ('NCHW', 'NCDHW'):
+    if (self.in_layout or self.layout) in ('NCHW', 'NCDHW'):
       self.in_channels = db_obj.input_t.dim1
       self.in_d = db_obj.input_t.dim2
       self.in_h = db_obj.input_t.dim3
       self.in_w = db_obj.input_t.dim4
-    elif self.in_layout in ('NHWC', 'NDHWC'):
+    elif (self.in_layout or self.layout) in ('NHWC', 'NDHWC'):
       self.in_d = db_obj.input_t.dim1
       self.in_h = db_obj.input_t.dim2
       self.in_w = db_obj.input_t.dim3

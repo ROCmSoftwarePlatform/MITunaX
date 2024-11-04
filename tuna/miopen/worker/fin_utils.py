@@ -32,6 +32,7 @@ from tuna.miopen.utils.metadata import PREC_TO_CMD, INVERS_DIR_MAP  #, DIR_MAP
 from tuna.utils.logger import setup_logger
 from tuna.utils.utility import arch2targetid
 from tuna.miopen.utils.config_type import ConfigType
+from tuna.miopen.driver.batchnorm import DriverBatchNorm
 
 LOGGER = setup_logger('fin_utils')
 
@@ -113,42 +114,85 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
   wei_layout = None
   cmd = None
 
+  print(type(config))
+  print(config)
+  if config_type == ConfigType.convolution:
+    return_config = compose_config_obj_conv(config, config_type)
+  else:
+    return_config = compose_config_obj_bn(config, config_type)
+  exit()
+  #if 'input_t' in config.__dict__.keys():
+  #  input_t_dict = {'input_t': config.input_t.to_dict()}
+  #  cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
+  #  in_layout = input_t_dict['input_t']['layout']
+  #if 'weight_t' in config.__dict__.keys():
+  #  weight_t_dict = {'weight_t': config.weight_t.to_dict()}
+  #  cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
+  #  wei_layout = weight_t_dict['weight_t']['layout']
+
+  return return_config
+
+
+def compose_config_obj_bn(config, config_type):
+  driver = DriverBatchNorm(db_obj=config)
+  print('driver: %s', driver.to_dict())
+  return_config = config.to_dict()
+  input_t_dict = update_input_t(return_config, config, config_type)
+
+  return_config.update(get_tensor('in_layout', input_t_dict['input_t']))
+  direction_t = int(config.forw) + 4 * int(config.back)
+  #return_config['direction'] = DIR_MAP[direction_t]
+  return_config['direction'] = direction_t
+  return_config.pop('input_t')
+  print(return_config)
+  exit()
+
+  return return_config
+
+
+def compose_config_obj_conv(config, config_type):
+  return_config = config.to_dict()
+  input_t_dict = update_input_t(return_config, config, config_type)
+  weight_t_dict = update_weight_t(return_config, config, config_type)
+
+  if return_config['in_layout'] != return_config['wei_layout'] != return_config[
+      'out_layout']:
+    LOGGER.error('Layouts must match. in_layout = %s, wei_layout=%s', in_layout,
+                 wei_layout)
+    return None
+
+  return_config.update(get_tensor('in_layout', input_t_dict['input_t']))
+  return_config.update(get_tensor('wei_layout', weight_t_dict['weight_t']))
+  return_config.pop('input_t')
+  return_config.pop('weight_t')
+
+  return return_config
+
+
+def update_input_t(return_config, config, config_type):
+  input_t_dict = {}
   if 'input_t' in config.__dict__.keys():
     input_t_dict = {'input_t': config.input_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
     in_layout = input_t_dict['input_t']['layout']
+    return_config['cmd'] = cmd
+  else:
+    raise ValueError('input_t not present in config')
+
+  return input_t_dict
+
+
+def update_weight_t(return_config, config, config_type):
+  weight_t_dict = {}
   if 'weight_t' in config.__dict__.keys():
     weight_t_dict = {'weight_t': config.weight_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
     wei_layout = weight_t_dict['weight_t']['layout']
+    return_config['cmd'] = cmd
+  else:
+    raise ValueError('input_t not present in config')
 
-  return_config = config.to_dict()
-
-  if in_layout and wei_layout:
-    if in_layout != wei_layout != return_config['out_layout']:
-      LOGGER.error('Layouts must match. in_layout = %s, wei_layout=%s',
-                   in_layout, wei_layout)
-      return None
-  if in_layout:
-    return_config.pop('input_t')
-  if wei_layout:
-    return_config.pop('weight_t')
-
-  if input_t_dict:
-    return_config.update(get_tensor('in_layout', input_t_dict['input_t']))
-  if weight_t_dict:
-    return_config.update(get_tensor('wei_layout', weight_t_dict['weight_t']))
-
-  #For now this hold, but might change in the future
-  return_config['cmd'] = cmd
-
-  if config_type == ConfigType.batch_norm:
-    direction_t = int(config.forw) + 4 * int(config.back)
-    #return_config['direction'] = DIR_MAP[direction_t]
-    return_config['direction'] = direction_t
-
-  print('ret dict: %s', return_config)
-  return return_config
+  return weight_t_dict
 
 
 def get_tensor(tensor_type: str, tensor_dict: dict) -> dict:

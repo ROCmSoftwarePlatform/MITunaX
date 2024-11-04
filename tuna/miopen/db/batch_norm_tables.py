@@ -79,7 +79,7 @@ class BNConfig(BASE):
                          backref="bn_input_tensor",
                          foreign_keys=[input_tensor],
                          lazy="joined")
-  in_layout = Column(String(60), nullable=False, server_default="NCHW")
+  layout = Column(String(60), nullable=False, server_default="NCHW")
   driver = Column(String(length=512), nullable=False, server_default="")
 
   #pylint: disable=too-few-public-methods

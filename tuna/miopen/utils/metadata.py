@@ -143,8 +143,8 @@ TABLE_COLS_BN_MAP = {
     'r': ('run', 0),
     '-save': ('save', 0),
     's': ('save', 0),
-    '-layout': ('in_layout', 'NCHW'),
-    'L': ('in_layout', 'NCHW')
+    '-layout': ('layout', 'NCHW'),
+    'L': ('layout', 'NCHW')
 }
 
 SUPPORTED_LAYOUTS = ["NCHW", "NHWC", "NCDHW", "NDHWC"]
@@ -153,6 +153,12 @@ SUPPORTED_LAYOUTS = ["NCHW", "NHWC", "NCDHW", "NDHWC"]
 #3D layouts
 NCDHW_LAYOUT = {
     'in_layout': {
+        'dim1': 'in_channels',
+        'dim2': 'in_d',
+        'dim3': 'in_h',
+        'dim4': 'in_w'
+    },
+    'layout': {
         'dim1': 'in_channels',
         'dim2': 'in_d',
         'dim3': 'in_h',
@@ -168,6 +174,12 @@ NCDHW_LAYOUT = {
 }
 NDHWC_LAYOUT = {
     'in_layout': {
+        'dim1': 'in_d',
+        'dim2': 'in_h',
+        'dim3': 'in_w',
+        'dim4': 'in_channels'
+    },
+    'layout': {
         'dim1': 'in_d',
         'dim2': 'in_h',
         'dim3': 'in_w',
@@ -189,6 +201,12 @@ NCHW_LAYOUT = {
         'dim3': 'in_h',
         'dim4': 'in_w'
     },
+    'layout': {
+        'dim1': 'in_channels',
+        'dim2': 'in_d',
+        'dim3': 'in_h',
+        'dim4': 'in_w'
+    },
     'wei_layout': {
         'dim0': 'out_channels',
         'dim1': 'in_channels',
@@ -199,6 +217,12 @@ NCHW_LAYOUT = {
 }
 NHWC_LAYOUT = {
     'in_layout': {
+        'dim1': 'in_d',
+        'dim2': 'in_h',
+        'dim3': 'in_w',
+        'dim4': 'in_channels'
+    },
+    'layout': {
         'dim1': 'in_d',
         'dim2': 'in_h',
         'dim3': 'in_w',
@@ -248,7 +272,8 @@ TENSOR_COLS = [
 IN_TENSOR_COLS = ['in_channels', 'in_d', 'in_h', 'in_w']
 
 BN_CONFIG_COLS = [
-    'batchsize', 'forw', 'mode', 'run', 'alpha', 'beta', 'back', 'run', 'save'
+    'batchsize', 'forw', 'mode', 'run', 'alpha', 'beta', 'back', 'run', 'save',
+    'layout'
 ]
 
 TABLE_COLS_FUSION_MAP = {
@@ -452,17 +477,30 @@ SLV_ENV_MAP = {
 }
 
 #used in Parsing
-FDS_3D = [
+FDS_3D_CONV = [
     'pad_d', 'pad_h', 'pad_w', 'out_channels', 'fil_d', 'fil_w', 'fil_h',
     'dilation_d', 'dilation_w', 'dilation_h', 'conv_stride_d', 'conv_stride_w',
     'conv_stride_h', 'in_channels', 'in_d', 'in_w', 'in_h', 'batchsize',
     'group_count', 'in_layout', 'out_layout', 'fil_layout'
 ]
 
-FDS_2D = [
+FDS_3D_BN = [
+    'pad_d', 'pad_h', 'pad_w', 'out_channels', 'fil_d', 'fil_w', 'fil_h',
+    'dilation_d', 'dilation_w', 'dilation_h', 'conv_stride_d', 'conv_stride_w',
+    'conv_stride_h', 'in_channels', 'in_d', 'in_w', 'in_h', 'batchsize',
+    'group_count', 'layout', 'out_layout', 'fil_layout'
+]
+
+FDS_2D_CONV = [
     'pad_h', 'pad_w', 'out_channels', 'fil_w', 'fil_h', 'dilation_w',
     'dilation_h', 'conv_stride_w', 'conv_stride_h', 'in_channels', 'in_w',
     'in_h', 'batchsize', 'group_count', 'in_layout', 'out_layout', 'fil_layout'
+]
+
+FDS_2D_BN = [
+    'pad_h', 'pad_w', 'out_channels', 'fil_w', 'fil_h', 'dilation_w',
+    'dilation_h', 'conv_stride_w', 'conv_stride_h', 'in_channels', 'in_w',
+    'in_h', 'batchsize', 'group_count', 'layout', 'out_layout', 'fil_layout'
 ]
 
 MIOPEN_ALG_LIST = [

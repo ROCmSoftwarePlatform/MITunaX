@@ -51,6 +51,7 @@ from tuna.miopen.celery_tuning.celery_tasks import prep_worker
 from tuna.miopen.worker.fin_utils import compose_config_obj, fin_job
 from tuna.miopen.utils.lib_helper import get_worker
 
+
 @pytest.mark.asyncio
 async def test_celery_workers():
   miopen = MIOpen()

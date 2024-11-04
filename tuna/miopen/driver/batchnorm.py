@@ -26,6 +26,7 @@
 ###############################################################################
 """Module that encapsulates the DB representation of a batch_normDriver cmd"""
 
+from typing import Any
 from tuna.utils.logger import setup_logger
 from tuna.miopen.driver.base import MIOpenDriver
 from tuna.miopen.utils.metadata import BN_CONFIG_COLS, IN_TENSOR_COLS, PREC_TO_CMD
@@ -58,7 +59,7 @@ class DriverBatchNorm(MIOpenDriver):
     self.in_h: int = 1
     self.in_w: int = 1
     self.in_channels: int = 1
-    self.in_layout: str = 'NCHW'
+    self.layout: str = 'NCHW'
     self.num_dims: int = 2
     self.direction: str = 'F'
     self.save: int = 0
@@ -96,11 +97,11 @@ class DriverBatchNorm(MIOpenDriver):
     direction_t: int
     direction_t = int(self.forw) + 4 * int(self.back)
 
-    if direction_t and direction_t in DIRECTION:
-      self.direction = DIR_MAP[direction_t]
-    else:
-      raise ValueError("Can't import driver commmand line, \
-          one and only one of forw or back must be set")
+    #if direction_t and direction_t in DIRECTION:
+    #  self.direction = DIR_MAP[direction_t]
+    #else:
+    #  raise ValueError("Can't import driver commmand line, \
+    #      one and only one of forw or back must be set")
 
   def parse_row(self, db_obj: BNConfig) -> None:
     """Overwritting base class function for batch_norm"""
@@ -112,7 +113,7 @@ class DriverBatchNorm(MIOpenDriver):
       if key not in ('id', 'input_t', 'driver'):
         setattr(self, key, value)
     self.compute_direction()
-    self.in_layout = db_obj.in_layout
+    self.layout = db_obj.layout
 
   def compose_tensors(self, keep_id: bool = False) -> dict:
     """Get tensors needed for DB table based on config type"""
@@ -125,7 +126,7 @@ class DriverBatchNorm(MIOpenDriver):
 
   def get_layouts(self):
     """Get batch norm layouts"""
-    return ["in_layout"]
+    return ["layout"]
 
   def get_bn_dict(self) -> dict:
     """Populate c_dict with conv table elems"""
@@ -179,3 +180,12 @@ class DriverBatchNorm(MIOpenDriver):
   def set_cmd(self, data_type: str) -> None:
     """Set cmd based on tensor data type"""
     self.cmd = PREC_TO_CMD[ConfigType.batch_norm][data_type]
+
+  def construct_driver_from_db(self, db_obj: Any) -> bool:
+    """Takes a bn_config row and returns a driver cmd"""
+    LOGGER.info('Processing db_row: %s', db_obj.to_dict())
+    #common tensor among convolution and batch norm
+    self.decompose_input_t(db_obj)
+    self.parse_row(db_obj)
+
+    return True

@@ -134,7 +134,7 @@ class DriverConvolution(MIOpenDriver):
     """Import config attributes from fdb key line"""
     fds: dict
     direction: str
-    fds, _, direction = get_fds_from_cmd(line)
+    fds, _, direction = get_fds_from_cmd(line, ConfigType.convolution)
     setattr(self, 'direction',
             DIR_MAP.get(direction,
                         ''))  # Use .get() to safely access the dictionary
@@ -321,3 +321,13 @@ class DriverConvolution(MIOpenDriver):
   def set_cmd(self, data_type: str) -> None:
     """Set cmd based on tensor data type"""
     self.cmd = PREC_TO_CMD[ConfigType.convolution][data_type]
+
+  def construct_driver_from_db(self, db_obj: Any) -> bool:
+    """Takes a bn_config row and returns a driver cmd"""
+    LOGGER.info('Processing db_row: %s', db_obj.to_dict())
+    #common tensor among convolution and batch norm
+    self.decompose_input_t(db_obj)
+    self.decompose_weight_t(db_obj)
+    self.parse_row(db_obj)
+
+    return True

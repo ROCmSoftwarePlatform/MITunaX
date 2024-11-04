@@ -30,7 +30,8 @@ from re import search
 
 from tuna.miopen.utils.metadata import CONV_SKIP_ARGS
 from tuna.miopen.utils.metadata import TABLE_COLS_FUSION_MAP, TABLE_COLS_CONV_MAP, TABLE_COLS_BN_MAP
-from tuna.miopen.utils.metadata import INVERS_DIR_MAP, FDS_3D, FDS_2D, DIR_MAP
+from tuna.miopen.utils.metadata import INVERS_DIR_MAP, FDS_3D_CONV, FDS_3D_BN
+from tuna.miopen.utils.metadata import FDS_2D_BN, FDS_2D_CONV, DIR_MAP
 from tuna.miopen.utils.metadata import SUPPORTED_BN_CMDS, SUPPORTED_CONV_CMDS
 from tuna.utils.logger import setup_logger
 from tuna.miopen.utils.helper import config_set_defaults
@@ -40,8 +41,18 @@ from tuna.miopen.utils.config_type import ConfigType
 LOGGER = setup_logger()
 
 
-def parse_pdb_key(key):
+#NOTE: only conv support, BN support TBD
+def parse_pdb_key(key, config_type=ConfigType.convolution):
   """return network parameters from fdb key string"""
+  fds_3D = None
+  fds_2D = None
+  if config_type == ConfigType.convolution:
+    fds_3D = FDS_3D_CONV
+    fds_2D = FDS_2D_CONV
+  else:
+    fds_3D = FDS_3D_BN
+    fds_2D = FDS_2D_BN
+
   if key.find('=') != -1:
     raise ValueError(f'Invalid 2D PDB key: {key}')
 
@@ -58,11 +69,11 @@ def parse_pdb_key(key):
 
   if search(pattern_3d, key):
     vals, precision, direction = parse_3d(key, group_count)
-    fds = FDS_3D
+    fds = fds_3D
     vals.append('3')
   else:
     vals, precision, direction = parse_2d(key, group_count)
-    fds = FDS_2D
+    fds = fds_2D
     vals.append('2')
   fds.append('spatial_dim')
 
@@ -75,6 +86,7 @@ def parse_pdb_key(key):
   return fds, vals2, precision, INVERS_DIR_MAP[direction]
 
 
+#NOTE: only conv support, BN support TBD
 def parse_2d(key, group_count):  #pylint: disable=too-many-locals
   """parse key values for 2d network"""
   #sample 2D
@@ -126,6 +138,7 @@ def parse_2d(key, group_count):  #pylint: disable=too-many-locals
   return vals_2d, precision, direction
 
 
+#NOTE: only conv support, BN support TBD
 def parse_3d(key, group_count):  #pylint: disable=too-many-locals
   """parse key values for 3d network"""
   #sample 3D
@@ -299,12 +312,16 @@ def parse_fdb_line(cmd):
   return out_dict
 
 
-def get_fds_from_cmd(cmd):
+def get_fds_from_cmd(cmd, config_type):
   """Return dict of db var to value from MIOpenDriver cmd"""
   if cmd.find('=') != -1:
-    f_val, v_val, p_val, direction = parse_pdb_key(cmd.split('=')[0])
+    f_val, v_val, p_val, direction = parse_pdb_key(
+        cmd.split('=')[0], config_type)
     fds = dict(zip(f_val, v_val))
-    fds['cmd'] = PREC_TO_CMD.get(ConfigType.convolution).get(p_val, None)
+    if config_type == ConfigType.convolution:
+      fds['cmd'] = PREC_TO_CMD.get(ConfigType.convolution).get(p_val, None)
+    else:
+      fds['cmd'] = PREC_TO_CMD.get(ConfigType.batch_norm).get(p_val, None)
     if not fds['cmd']:
       LOGGER.error('Invalid precision in perf db key')
   else:
@@ -313,21 +330,6 @@ def get_fds_from_cmd(cmd):
   cmd = fds['cmd']
 
   return fds, CMD_TO_PREC.get(cmd, None), direction
-
-
-def get_fdb_dict(cmd):
-  """return fdb_keys from cmd"""
-  fds, precision, direction = get_fds_from_cmd(cmd)
-  config_set_defaults(fds)
-  fdb_keys = {}
-  if direction is None:
-    fdb_keys['F'] = get_pdb_key(fds, precision, 'F')
-    fdb_keys['B'] = get_pdb_key(fds, precision, 'B')
-    fdb_keys['W'] = get_pdb_key(fds, precision, 'W')
-  else:
-    fdb_keys[DIR_MAP[direction]] = get_pdb_key(fds, precision,
-                                               DIR_MAP[direction])
-  return fdb_keys
 
 
 def get_fd_name(tok1, cols_map):
