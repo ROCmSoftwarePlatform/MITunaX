@@ -303,6 +303,33 @@ def finFindEval(){
             error("Unable to evaluate find jobs using Fin")
         }
 
+        //Batch Norm
+        def num_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn' AND state = 'compiled';").toInteger()
+        gpu_list.each{
+            celery_log="${env.WORKSPACE}/tuna/${branch_id}_find_eval_celery_log_${counter}.log"
+            sh "touch ${celery_log}"
+            def proc_id = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id}_gpu_id_${counter} -Q eval_q_${db_name}_sess_${sesh1} -c 1 2>\0461 1>/dev/null & echo \$!", returnStdout: true).trim()
+            sh "cat ${celery_log}"
+            pid_list.add(proc_id)
+            counter++
+        }
+
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_eval -l finFind_${branch_id}_bn --session_id ${sesh1} -C batch_norm --enqueue_only"
+        //killing off celery workers by pid
+        pid_list.each{
+          try{
+            sh "kill -9 ${it}"
+          } catch (Exception err) {
+            sh "echo ${err}"
+          }
+        }
+
+        def num_evaluated_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn' AND state = 'evaluated';").toInteger()
+        sh "echo ${num_evaluated_jobs_bn} == ${num_jobs_bn}"
+        if (num_evaluated_jobs_bn != num_jobs_bn){
+            error("Unable to evaluate find BN jobs using Fin")
+        }
+
         def MIOPEN_BRANCH = runsql("SELECT miopen_v from session WHERE id=1;")
         def fdb_file = sh(script: "./tuna/go_fish.py miopen export_db -a ${arch} -n ${num_cu} -f --session_id ${sesh1}", returnStdout: true)
         archiveArtifacts  "${fdb_file}"

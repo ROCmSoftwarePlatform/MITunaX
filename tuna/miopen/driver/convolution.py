@@ -44,7 +44,7 @@ from tuna.miopen.utils.config_type import ConfigType
 LOGGER = setup_logger('driver_conv')
 
 
-#pylint: disable=too-many-instance-attributes
+#pylint: disable=too-many-instance-attributes, too-many-public-methods
 class DriverConvolution(MIOpenDriver):
   """Represents an MIOpenDriver convolution command"""
 
@@ -333,21 +333,20 @@ class DriverConvolution(MIOpenDriver):
     return True
 
   def has_layout_in(self, prefix, layouts):
+    """Check if layout defined by prefix is in layouts"""
     if prefix == "in":
       return self.in_layout in layouts
-    elif prefix == "fil":  #weight
+    if prefix == "fil":  #weight
       return self.fil_layout in layouts
-    else:
-      return self.out_layout in layouts
+    return self.out_layout in layouts
 
   def get_layout(self, prefix):
     """Get layout defined by prefix"""
     if prefix == "in":
       return self.in_layout
-    elif prefix == "fil":  #weight
+    if prefix == "fil":  #weight
       return self.fil_layout
-    else:
-      return self.out_layout
+    return self.out_layout
 
   def set_layout(self, layout, prefix):
     """Set layout with prefix to layout arg"""

@@ -31,7 +31,8 @@ from tuna.utils.logger import setup_logger
 from tuna.miopen.driver.base import MIOpenDriver
 from tuna.miopen.utils.metadata import BN_CONFIG_COLS, IN_TENSOR_COLS, PREC_TO_CMD
 from tuna.miopen.utils.metadata import SUPPORTED_BN_CMDS, TABLE_COLS_BN_MAP, BN_DEFAULTS
-from tuna.miopen.utils.metadata import DIRECTION, DIR_MAP, BN_SKIP_ARGS
+#from tuna.miopen.utils.metadata import DIRECTION, DIR_MAP, BN_SKIP_ARGS
+from tuna.miopen.utils.metadata import BN_SKIP_ARGS
 from tuna.miopen.db.batch_norm_tables import BNConfig
 from tuna.miopen.utils.parsing import get_fd_name, arg_valid
 from tuna.miopen.utils.helper import get_db_id
@@ -85,23 +86,23 @@ class DriverBatchNorm(MIOpenDriver):
     self._cmd = value
 
   def parse_driver_line(self, line: str) -> None:
-    super().parse_driver_line(line)
-    self.compute_direction()
+    self.parse_driver_line(line)
+    #self.compute_direction()
 
   def compose_weight_t(self):
     """ Overridden Method """
     raise NotImplementedError("Not implemented")
 
-  def compute_direction(self) -> None:
-    """Setting BN direction based on forw and back"""
-    direction_t: int
-    direction_t = int(self.forw) + 4 * int(self.back)
+  #def compute_direction(self) -> None:
+  #  """Setting BN direction based on forw and back"""
+  #  direction_t: int
+  #  direction_t = int(self.forw) + 4 * int(self.back)
 
-    #if direction_t and direction_t in DIRECTION:
-    #  self.direction = DIR_MAP[direction_t]
-    #else:
-    #  raise ValueError("Can't import driver commmand line, \
-    #      one and only one of forw or back must be set")
+  #  #if direction_t and direction_t in DIRECTION:
+  #  #  self.direction = DIR_MAP[direction_t]
+  #  #else:
+  #  #  raise ValueError("Can't import driver commmand line, \
+  #  #      one and only one of forw or back must be set")
 
   def parse_row(self, db_obj: BNConfig) -> None:
     """Overwritting base class function for batch_norm"""
@@ -112,7 +113,7 @@ class DriverBatchNorm(MIOpenDriver):
     for key, value in db_obj.to_dict(ommit_ts=True, ommit_valid=True).items():
       if key not in ('id', 'input_t', 'driver'):
         setattr(self, key, value)
-    self.compute_direction()
+    #self.compute_direction()
     self.layout = db_obj.layout
 
   def compose_tensors(self, keep_id: bool = False) -> dict:
@@ -194,10 +195,7 @@ class DriverBatchNorm(MIOpenDriver):
 
   def has_layout_in(self, _, layouts):
     """Check if layout defined by prefix is in layouts"""
-    if self.layout in layouts:
-      return True
-    else:
-      return False
+    return self.layout in layouts
 
   def get_layout(self, prefix='in'):
     """Get layout defined by prefix"""
