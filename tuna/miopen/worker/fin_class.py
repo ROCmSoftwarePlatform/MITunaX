@@ -43,15 +43,13 @@ from sqlalchemy.inspection import inspect
 
 from tuna.worker_interface import WorkerInterface
 from tuna.dbBase.sql_alchemy import DbSession
-from tuna.miopen.utils.metadata import FIN_CACHE
-from tuna.miopen.utils.metadata import INVERS_DIR_MAP
+from tuna.miopen.utils.metadata import FIN_CACHE, INVERS_DIR_MAP
 from tuna.miopen.worker.fin_utils import compose_config_obj
 from tuna.miopen.utils.config_type import ConfigType
 from tuna.utils.db_utility import session_retry
 from tuna.miopen.db.solver import get_solver_ids, get_id_solvers
-from tuna.utils.db_utility import gen_select_objs, get_class_by_tablename
-from tuna.utils.utility import split_packets
-from tuna.utils.utility import SimpleDict
+from tuna.utils.db_utility import gen_select_objs, get_class_by_tablename, attach_tensor_info
+from tuna.utils.utility import split_packets, SimpleDict
 
 
 class FinClass(WorkerInterface):
@@ -193,14 +191,15 @@ class FinClass(WorkerInterface):
                                     cfg_cond_str)
 
       #attach tensor relationship information to config entries
-      for cfg in cfg_entries:
-        for key, val in self.cfg_rel.items():
-          rel_val = getattr(cfg, val['key'])
-          rel_cond_str = f"where {val['fkey']}={rel_val}"
-          setattr(
-              cfg, key,
-              gen_select_objs(session, val['fattr'], val['ftble'],
-                              rel_cond_str)[0])
+      attach_tensor_info(cfg_entries, session, self.cfg_rel)
+      #for cfg in cfg_entries:
+      #  for key, val in self.cfg_rel.items():
+      #    rel_val = getattr(cfg, val['key'])
+      #    rel_cond_str = f"where {val['fkey']}={rel_val}"
+      #    setattr(
+      #        cfg, key,
+      #        gen_select_objs(session, val['fattr'], val['ftble'],
+      #                        rel_cond_str)[0])
 
       cfg_map = {cfg.id: cfg for cfg in cfg_entries}
 

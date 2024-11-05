@@ -273,3 +273,14 @@ class DB_Type(enum.Enum):  # pylint: disable=invalid-name ; @chris rename, maybe
   FIND_DB = 1
   KERN_DB = 2
   PERF_DB = 3
+
+
+def attach_tensor_info(cfg_entries, session, cfg_rel):
+  """Attach tensor relationship info"""
+  for cfg in cfg_entries:
+    for key, val in cfg_rel.items():
+      rel_val = getattr(cfg, val['key'])
+      rel_cond_str = f"where {val['fkey']}={rel_val}"
+      setattr(
+          cfg, key,
+          gen_select_objs(session, val['fattr'], val['ftble'], rel_cond_str)[0])

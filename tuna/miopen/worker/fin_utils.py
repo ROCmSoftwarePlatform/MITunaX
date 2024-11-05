@@ -108,14 +108,7 @@ def get_fin_result(status):
 def compose_config_obj(config, config_type=ConfigType.convolution):
   """Helper function to compose non-conv config obj"""
   return_config = {}
-  input_t_dict = None
-  in_layout = None
-  weight_t_dict = None
-  wei_layout = None
-  cmd = None
 
-  print(type(config))
-  print(config)
   if config_type == ConfigType.convolution:
     return_config = compose_config_obj_conv(config, config_type)
   else:
@@ -133,6 +126,7 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
 
 
 def compose_config_obj_bn(config, config_type):
+  """Compose config object for BN"""
   driver = DriverBatchNorm(db_obj=config)
   print('driver: %s', driver.to_dict())
   return_config = config.to_dict()
@@ -148,14 +142,15 @@ def compose_config_obj_bn(config, config_type):
 
 
 def compose_config_obj_conv(config, config_type):
+  """Compose config object for Conv"""
   return_config = config.to_dict()
   input_t_dict = update_input_t(return_config, config, config_type)
   weight_t_dict = update_weight_t(return_config, config, config_type)
 
   if return_config['in_layout'] != return_config['wei_layout'] != return_config[
       'out_layout']:
-    LOGGER.error('Layouts must match. in_layout = %s, wei_layout=%s', in_layout,
-                 wei_layout)
+    LOGGER.error('Layouts must match. in_layout = %s, wei_layout=%s',
+                 config['in_layout'], config['wei_layout'])
     return None
 
   return_config.update(get_tensor('in_layout', input_t_dict['input_t']))
@@ -167,11 +162,12 @@ def compose_config_obj_conv(config, config_type):
 
 
 def update_input_t(return_config, config, config_type):
+  """Set input tensor"""
   input_t_dict = {}
   if 'input_t' in config.__dict__.keys():
     input_t_dict = {'input_t': config.input_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
-    in_layout = input_t_dict['input_t']['layout']
+    #in_layout = input_t_dict['input_t']['layout']
     return_config['cmd'] = cmd
   else:
     raise ValueError('input_t not present in config')
@@ -180,11 +176,12 @@ def update_input_t(return_config, config, config_type):
 
 
 def update_weight_t(return_config, config, config_type):
+  """Set weight tensor"""
   weight_t_dict = {}
   if 'weight_t' in config.__dict__.keys():
     weight_t_dict = {'weight_t': config.weight_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
-    wei_layout = weight_t_dict['weight_t']['layout']
+    #wei_layout = weight_t_dict['weight_t']['layout']
     return_config['cmd'] = cmd
   else:
     raise ValueError('input_t not present in config')

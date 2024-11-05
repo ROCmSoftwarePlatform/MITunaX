@@ -46,7 +46,7 @@ from tuna.tables_interface import DBTablesInterface
 from tuna.utils.utility import SimpleDict, serialize_chunk
 from tuna.utils.machine_utility import load_machines
 from tuna.utils.db_utility import gen_select_objs, has_attr_set, get_class_by_tablename
-from tuna.utils.db_utility import gen_update_query, session_retry
+from tuna.utils.db_utility import gen_update_query, session_retry, attach_tensor_info
 from tuna.miopen.db.get_db_tables import get_miopen_tables
 from tuna.miopen.db.mixin_tables import FinStep
 from tuna.miopen.utils.metadata import MIOPEN_ALG_LIST
@@ -597,21 +597,22 @@ class MIOpen(MITunaInterface):
 
   def attach_tensors(self, session, cfg_rel, cfg_entries):
     """attach tensor relationship information to config entries"""
-    for key, val in cfg_rel.items():
+    for _, val in cfg_rel.items():
       rel_attr = [
           column.name
           for column in inspect(get_class_by_tablename(val['ftble'])).c
       ]
       val['fattr'] = rel_attr
 
-    for cfg in cfg_entries:
-      for key, val in cfg_rel.items():
-        rel_val = getattr(cfg, val['key'])
-        rel_cond_str = f"where {val['fkey']}={rel_val}"
-        setattr(
-            cfg, key,
-            gen_select_objs(session, val['fattr'], val['ftble'],
-                            rel_cond_str)[0])
+    attach_tensor_info(cfg_entries, session, cfg_rel)
+    #for cfg in cfg_entries:
+    #  for key, val in cfg_rel.items():
+    #    rel_val = getattr(cfg, val['key'])
+    #    rel_cond_str = f"where {val['fkey']}={rel_val}"
+    #    setattr(
+    #        cfg, key,
+    #        gen_select_objs(session, val['fattr'], val['ftble'],
+    #                       rel_cond_str)[0])
     return cfg_entries
 
   def check_jobs_found(self, job_rows: List[SimpleDict], find_state: List[Any],

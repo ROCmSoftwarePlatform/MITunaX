@@ -639,9 +639,9 @@ PREC_TO_CMD = {
     ConfigType.batch_norm: {
         'FP32': 'bnorm',
         'FP16': 'bnormfp16',
-        'FP16FP32': 'bnormFP16FP32',
+        'FP16FP32': 'bnormfp16fp32',
         'BFP16': 'bnormbfp16',
-        'BFP16FP32': 'bnormBFP16FP32'
+        'BFP16FP32': 'bnormbfp16fp32'
     }
 }
 CMD_TO_PREC = {
