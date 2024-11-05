@@ -120,7 +120,9 @@ class DriverBatchNorm(MIOpenDriver):
     c_dict = self.get_bn_dict()
 
     if keep_id:
-      c_dict['id'] = get_db_id(c_dict, BNConfig)
+      dict_copy = c_dict.copy()
+      dict_copy.pop('driver')
+      c_dict['id'] = get_db_id(dict_copy, BNConfig)
 
     return c_dict
 
@@ -189,3 +191,18 @@ class DriverBatchNorm(MIOpenDriver):
     self.parse_row(db_obj)
 
     return True
+
+  def has_layout_in(self, _, layouts):
+    """Check if layout defined by prefix is in layouts"""
+    if self.layout in layouts:
+      return True
+    else:
+      return False
+
+  def get_layout(self, prefix='in'):
+    """Get layout defined by prefix"""
+    return self.layout
+
+  def set_layout(self, layout, prefix="in"):
+    """Set layout with prefix to layout arg"""
+    self.layout = layout

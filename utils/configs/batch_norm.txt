@@ -1,3 +1,7 @@
+./bin/MIOpenDriver bnorm -n 8 -c 8 -H 12 -W 12 -D 12 -m 1 --forw 0 -b 1 -s 1 -r 1 --layout NDHWC
+./bin/MIOpenDriver bnorm -n 64 -c 1024 -H 14 -W 14 -m 1 --forw 1 -b 0 -s 0 -r 1 -L NHWC
+./bin/MIOpenDriver bnorm -n 64 -c 1024 -H 14 -W 14 -m 1 --forw 1 -b 0 -s 0 -r 1 --layout NHWC
+./bin/MIOpenDriver bnormfp16fp32 -n 8 -c 8 -H 12 -W 12 -m 1 --forw 2 -b 0 -s 1 -r 1 --layout NHWC
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 1024 -H 14 -W 14 -m 1 --forw 0 -b 1 -r 1
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 128 -H 28 -W 28 -m 1 --forw 0 -b 1 -r 1
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 128 -H 28 -W 28 -m 1 --forw 1 -b 0 -s 1 -r 1
@@ -12,14 +16,11 @@
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 512 -H 7 -W 7 -m 1 --forw 0 -b 1 -r 1
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 64 -H 112 -W 112 -m 1 --forw 0 -b 1 -r 1
 ./bin/MIOpenDriver bnormfp16 -n 256 -c 64 -H 56 -W 56 -m 1 --forw 1 -b 0 -s 1 -r 1
-
 ./bin/MIOpenDriver bnormbfp16fp32 -n 32 -c 1024 -H 7 -W 7 -m 1 --forw 1 -b 0 -s 1 -r 1
 ./bin/MIOpenDriver bnormbfp16fp32 -n 32 -c 176 -H 14 -W 14 -m 1 --forw 0 -b 1 -r 1
 ./bin/MIOpenDriver bnormbfp16fp32 -n 32 -c 176 -H 28 -W 28 -m 1 --forw 0 -b 1 -r 1
-
-./bin/MIOpenDriver bnorm -n 32 -c 928 -H 7 -W 7 -M 1 --forw 1 -b 0 -s 1 -r 1
-./bin/MIOpenDriver bnorm -n 32 -c 96 -H 56 -W 56 -M 1 --forw 0 -b 1 -r 1
-./bin/MIOpenDriver bnorm -n 32 -c 96 -H 56 -W 56 -M 1 --forw 1 -b 0 -s 1 -r 1
-./bin/MIOpenDriver bnorm -n 32 -c 960 -H 14 -W 14 -M 1 --forw 0 -b 1 -r 1
-./bin/MIOpenDriver bnorm -n 32 -c 960 -H 14 -W 14 -M 1 --forw 1 -b 0 -s 1 -r 1
-
+./bin/MIOpenDriver bnorm -n 32 -c 928 -H 7 -W 7 -m 1 --forw 1 -b 0 -s 1 -r 1
+./bin/MIOpenDriver bnorm -n 32 -c 96 -H 56 -W 56 -m 1 --forw 0 -b 1 -r 1
+./bin/MIOpenDriver bnorm -n 32 -c 96 -H 56 -W 56 -m 1 --forw 1 -b 0 -s 1 -r 1
+./bin/MIOpenDriver bnorm -n 32 -c 960 -H 14 -W 14 -m 1 --forw 0 -b 1 -r 1
+./bin/MIOpenDriver bnorm -n 32 -c 960 -H 14 -W 14 -m 1 --forw 1 -b 0 -s 1 -r 1

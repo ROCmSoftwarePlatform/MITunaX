@@ -121,6 +121,7 @@ TABLE_COLS_BN_MAP = {
     'B': ('beta', 0.0),
     '!': ('in_d', 0),
     '-in_d': ('in_d', 0),
+    'D': ('in_d', 0),
     '-forw': ('forw', 1),
     'F': ('forw', 1),
     'H': ('in_h', 32),

@@ -331,3 +331,29 @@ class DriverConvolution(MIOpenDriver):
     self.parse_row(db_obj)
 
     return True
+
+  def has_layout_in(self, prefix, layouts):
+    if prefix == "in":
+      return self.in_layout in layouts
+    elif prefix == "fil":  #weight
+      return self.fil_layout in layouts
+    else:
+      return self.out_layout in layouts
+
+  def get_layout(self, prefix):
+    """Get layout defined by prefix"""
+    if prefix == "in":
+      return self.in_layout
+    elif prefix == "fil":  #weight
+      return self.fil_layout
+    else:
+      return self.out_layout
+
+  def set_layout(self, layout, prefix):
+    """Set layout with prefix to layout arg"""
+    if prefix == "in":
+      self.in_layout = layout
+    elif prefix == "fil":  #weight
+      self.fil_layout = layout
+    else:
+      self.out_layout = layout
