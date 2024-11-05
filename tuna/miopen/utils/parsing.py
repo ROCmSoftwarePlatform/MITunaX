@@ -312,7 +312,7 @@ def parse_fdb_line(cmd):
   return out_dict
 
 
-def get_fds_from_cmd(cmd, config_type):
+def get_fds_from_cmd(cmd, config_type=ConfigType.convolution):
   """Return dict of db var to value from MIOpenDriver cmd"""
   if cmd.find('=') != -1:
     f_val, v_val, p_val, direction = parse_pdb_key(
