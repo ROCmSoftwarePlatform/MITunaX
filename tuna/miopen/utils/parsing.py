@@ -49,9 +49,12 @@ def parse_pdb_key(key, config_type=ConfigType.convolution):
   if config_type == ConfigType.convolution:
     fds_3D = FDS_3D_CONV
     fds_2D = FDS_2D_CONV
-  else:
+  elif config_type == ConfigType.batch_norm:
     fds_3D = FDS_3D_BN
     fds_2D = FDS_2D_BN
+  else:
+    raise ValueError(
+        'New config type support needs to be added for pdb key parsing')
 
   if key.find('=') != -1:
     raise ValueError(f'Invalid 2D PDB key: {key}')
@@ -320,8 +323,11 @@ def get_fds_from_cmd(cmd, config_type=ConfigType.convolution):
     fds = dict(zip(f_val, v_val))
     if config_type == ConfigType.convolution:
       fds['cmd'] = PREC_TO_CMD.get(ConfigType.convolution).get(p_val, None)
-    else:
+    elif config_type == ConfigType.batch_norm:
       fds['cmd'] = PREC_TO_CMD.get(ConfigType.batch_norm).get(p_val, None)
+    else:
+      raise ValueError(
+          'New config type support needs to be added for fds_from_cmd')
     if not fds['cmd']:
       LOGGER.error('Invalid precision in perf db key')
   else:

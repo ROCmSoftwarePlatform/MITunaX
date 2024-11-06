@@ -53,9 +53,11 @@ def fin_job(steps, dynamic_only, job, config, dbt):
     return_dict['direction'] = direction_t
     return_dict["config"] = compose_config_obj(config, ConfigType.batch_norm)
     return_dict['config']['direction'] = direction_t
-  else:
+  elif dbt.config_type == ConfigType.convolution:
     return_dict["direction"] = int(INVERS_DIR_MAP[config.direction])
     return_dict["config"] = compose_config_obj(config, ConfigType.convolution)
+  else:
+    raise ValueError('New config type support needs to eb added for fin_job')
 
   if job.solver:
     return_dict["solvers"] = [job.solver]
@@ -111,8 +113,11 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
 
   if config_type == ConfigType.convolution:
     return_config = compose_config_obj_conv(config, config_type)
-  else:
+  elif config_type == ConfigType.batch_norm:
     return_config = compose_config_obj_bn(config, config_type)
+  else:
+    raise ValueError(
+        'New config type support needs to be added for compose_config_obj')
   #if 'input_t' in config.__dict__.keys():
   #  input_t_dict = {'input_t': config.input_t.to_dict()}
   #  cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
@@ -122,6 +127,7 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
   #  cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
   #  wei_layout = weight_t_dict['weight_t']['layout']
 
+  print(return_config)
   return return_config
 
 
@@ -167,7 +173,12 @@ def update_input_t(return_config, config, config_type):
   if 'input_t' in config.__dict__.keys():
     input_t_dict = {'input_t': config.input_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][input_t_dict['input_t']['data_type']]
-    #in_layout = input_t_dict['input_t']['layout']
+    if config_type == ConfigType.convolution:
+      return_config['in_layout'] = input_t_dict['input_t']['layout']
+    elif config_type == ConfigType.batch_norm:
+      return_config['layout'] = input_t_dict['input_t']['layout']
+    else:
+      raise ValueError('New config type support needs to be addded')
     return_config['cmd'] = cmd
   else:
     raise ValueError('input_t not present in config')
@@ -181,7 +192,7 @@ def update_weight_t(return_config, config, config_type):
   if 'weight_t' in config.__dict__.keys():
     weight_t_dict = {'weight_t': config.weight_t.to_dict()}
     cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
-    #wei_layout = weight_t_dict['weight_t']['layout']
+    return_config['wei_layout'] = weight_t_dict['weight_t']['layout']
     return_config['cmd'] = cmd
   else:
     raise ValueError('input_t not present in config')
