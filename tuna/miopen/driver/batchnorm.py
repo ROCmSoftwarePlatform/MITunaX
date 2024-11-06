@@ -62,7 +62,7 @@ class DriverBatchNorm(MIOpenDriver):
     self.in_channels: int = 1
     self.layout: str = 'NCHW'
     self.num_dims: int = 2
-    self.direction: str = 1
+    self.direction: int = 1
     self.save: int = 0
     self.verify: int = 1
     self._cmd: str = 'bnorm'
