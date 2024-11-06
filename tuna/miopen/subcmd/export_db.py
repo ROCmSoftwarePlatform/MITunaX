@@ -124,7 +124,7 @@ def fin_db_key(config_lst, logger):
   _, fin_ifile = tempfile.mkstemp(suffix='.json')
   _, fin_ofile = tempfile.mkstemp(suffix='.json')
 
-  with open(fin_ifile, 'w') as in_file: # pylint: disable=unspecified-encoding
+  with open(fin_ifile, 'w') as in_file:  # pylint: disable=unspecified-encoding
     in_file.write(json.dumps(fin_net_cfg_job(config_lst), indent=2))
 
   fin_cmd = f"/opt/rocm/bin/fin -i {fin_ifile} -o {fin_ofile}"
@@ -136,7 +136,7 @@ def fin_db_key(config_lst, logger):
   with open(fin_ofile, 'r') as out_file:  # pylint: disable=unspecified-encoding
     try:
       result = json.load(out_file)
-    except Exception as err: # pylint: disable=broad-except
+    except Exception as err:  # pylint: disable=broad-except
       logger.error('Unable to load fin json file %s', err)
       for line in out_file:
         logger.error(line)
