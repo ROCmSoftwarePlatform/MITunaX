@@ -85,8 +85,8 @@ class DriverBatchNorm(MIOpenDriver):
            Supported cmds are: {SUPPORTED_BN_CMDS}')
     self._cmd = value
 
-  def parse_driver_line(self, line: str) -> None:
-    self.parse_driver_line(line)
+  def parse_driver_line(self, line: str) -> None:  #pylint: disable=useless-parent-delegation
+    super().parse_driver_line(line)
     #self.compute_direction()
 
   def compose_weight_t(self):
