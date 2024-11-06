@@ -141,6 +141,10 @@ def compose_config_obj_bn(config, config_type):
   return_config['direction'] = direction_t
   return_config.pop('input_t')
 
+  print('\n\n')
+  print('return_config: %s', return_config)
+  print('to_dict: %s', driver.to_dict())
+  print('driver %s:', driver)
   return return_config
 
 

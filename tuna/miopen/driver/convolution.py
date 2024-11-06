@@ -301,7 +301,7 @@ class DriverConvolution(MIOpenDriver):
 
   def decompose_weight_t(self, db_obj: ConvolutionConfig) -> bool:
     """Use weight_tensor to assign local variables to build driver cmd """
-    self.num_dims = db_obj.weight_t.num_dims
+    #self.num_dims = db_obj.weight_t.num_dims
     self.fil_layout = db_obj.weight_t.layout
 
     if self.fil_layout in ('NCHW', 'NCDHW'):

@@ -62,7 +62,7 @@ class DriverBatchNorm(MIOpenDriver):
     self.in_channels: int = 1
     self.layout: str = 'NCHW'
     self.num_dims: int = 2
-    self.direction: str = 'F'
+    self.direction: str = 1
     self.save: int = 0
     self.verify: int = 1
     self._cmd: str = 'bnorm'
@@ -87,22 +87,17 @@ class DriverBatchNorm(MIOpenDriver):
 
   def parse_driver_line(self, line: str) -> None:  #pylint: disable=useless-parent-delegation
     super().parse_driver_line(line)
-    #self.compute_direction()
+    self.compute_direction()
 
   def compose_weight_t(self):
     """ Overridden Method """
     raise NotImplementedError("Not implemented")
 
-  #def compute_direction(self) -> None:
-  #  """Setting BN direction based on forw and back"""
-  #  direction_t: int
-  #  direction_t = int(self.forw) + 4 * int(self.back)
-
-  #  #if direction_t and direction_t in DIRECTION:
-  #  #  self.direction = DIR_MAP[direction_t]
-  #  #else:
-  #  #  raise ValueError("Can't import driver commmand line, \
-  #  #      one and only one of forw or back must be set")
+  def compute_direction(self) -> None:
+    """Setting BN direction based on forw and back"""
+    direction_t: int
+    direction_t = int(self.forw) + 4 * int(self.back)
+    self.direction = direction_t
 
   def parse_row(self, db_obj: BNConfig) -> None:
     """Overwritting base class function for batch_norm"""
@@ -113,7 +108,7 @@ class DriverBatchNorm(MIOpenDriver):
     for key, value in db_obj.to_dict(ommit_ts=True, ommit_valid=True).items():
       if key not in ('id', 'input_t', 'driver'):
         setattr(self, key, value)
-    #self.compute_direction()
+    self.compute_direction()
     self.layout = db_obj.layout
 
   def compose_tensors(self, keep_id: bool = False) -> dict:

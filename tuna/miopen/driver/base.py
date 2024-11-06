@@ -200,7 +200,7 @@ class MIOpenDriver(DriverBase):
     """Build input_tensor"""
     i_dict: Dict[str, int] = {}
     i_dict['data_type'] = TENSOR_PRECISION[self.cmd]
-    i_dict['num_dims'] = self.num_dims
+    #i_dict['num_dims'] = self.num_dims
     i_dict['dim0'] = 1
 
     if self.has_layout_in("in", ['NCHW', 'NCDHW']):
@@ -214,6 +214,13 @@ class MIOpenDriver(DriverBase):
       i_dict['dim3'] = self.in_w
       i_dict['dim4'] = self.in_channels
       i_dict['layout'] = self.get_layout("in")
+
+    if self.has_layout_in("in", ['NCDHW', 'NDHWC']):
+      i_dict['num_dims'] = 3
+    elif self.has_layout_in("in", ['NHWC', 'NCHW']):
+      i_dict['num_dims'] = 2
+    else:
+      raise ValueError('Input tensor needs to support new dimension')
 
     return i_dict
 
