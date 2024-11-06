@@ -62,7 +62,6 @@ def fin_job(steps, dynamic_only, job, config, dbt):
   if job.solver:
     return_dict["solvers"] = [job.solver]
 
-  print('fin_job: %s', return_dict)
   return return_dict
 
 
@@ -127,18 +126,16 @@ def compose_config_obj(config, config_type=ConfigType.convolution):
   #  cmd = PREC_TO_CMD[config_type][weight_t_dict['weight_t']['data_type']]
   #  wei_layout = weight_t_dict['weight_t']['layout']
 
-  print(return_config)
   return return_config
 
 
 def compose_config_obj_bn(config, config_type):
   """Compose config object for BN"""
   driver = DriverBatchNorm(db_obj=config)
-  print('driver: %s', driver.to_dict())
   return_config = config.to_dict()
   input_t_dict = update_input_t(return_config, config, config_type)
 
-  return_config.update(get_tensor('in_layout', input_t_dict['input_t']))
+  return_config.update(get_tensor('layout', input_t_dict['input_t']))
   direction_t = int(config.forw) + 4 * int(config.back)
   #return_config['direction'] = DIR_MAP[direction_t]
   return_config['direction'] = direction_t
