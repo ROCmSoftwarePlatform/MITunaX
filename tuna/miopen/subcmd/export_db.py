@@ -553,7 +553,7 @@ def write_pdb(arch, num_cu, ocl, perf_db, filename=None):
 
 
 def export_pdb_txt(dbt: MIOpenDBTables, args: argparse.Namespace,
-               logger: logging.Logger):
+                   logger: logging.Logger):
   """ export perf db from mysql to txt file """
   query = get_pdb_query(dbt, args, logger)
   miopen_pdb = build_miopen_pdb(query, logger)
