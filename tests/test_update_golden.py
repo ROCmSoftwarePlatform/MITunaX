@@ -68,7 +68,7 @@ def test_update_golden():
   args.golden_v = gld_v1
 
   with DbSession() as session:
-    assert gold_session_update(session, gld_v1, session_id, logger, True)
+    assert gold_session_update(session, dbt, gld_v1, session_id, logger, True)
     query = session.query(ConvolutionGolden)\
                     .filter(ConvolutionGolden.golden_miopen_v == gld_v1)\
                     .filter(ConvolutionGolden.session == session_id)
