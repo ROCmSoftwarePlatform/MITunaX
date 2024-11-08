@@ -26,11 +26,11 @@
 ###############################################################################
 """Module that encapsulates the DB representation of a batch_normDriver cmd"""
 
-from typing import Any
+from typing import Any, Optional, Dict, Set
 from tuna.utils.logger import setup_logger
 from tuna.miopen.driver.base import MIOpenDriver
 from tuna.miopen.utils.metadata import BN_CONFIG_COLS, IN_TENSOR_COLS, PREC_TO_CMD
-from tuna.miopen.utils.metadata import SUPPORTED_BN_CMDS, TABLE_COLS_BN_MAP, BN_DEFAULTS
+from tuna.miopen.utils.metadata import SUPPORTED_BN_CMDS, TABLE_COLS_BN_MAP
 #from tuna.miopen.utils.metadata import DIRECTION, DIR_MAP, BN_SKIP_ARGS
 from tuna.miopen.utils.metadata import BN_SKIP_ARGS
 from tuna.miopen.db.batch_norm_tables import BNConfig
@@ -48,7 +48,14 @@ class DriverBatchNorm(MIOpenDriver):
   def __init__(self,
                line: str = str(),
                cmd: str = str(),
-               db_obj: BNConfig = None) -> None:
+               db_obj: BNConfig = None,
+               kwargs: Optional[Dict] = None) -> None:
+
+    allowed_keys: Set = set([
+        'batchsize', 'alpha', 'beta', 'forw', 'back', 'mode', 'run', 'in_d',
+        'in_h', 'in_w', 'in_channels', 'layout', 'num_dims', 'direction',
+        'save', 'verify', 'cmd'
+    ])
     self.batchsize: int = 0
     self.alpha: int = 1
     self.beta: int = 0
@@ -67,7 +74,12 @@ class DriverBatchNorm(MIOpenDriver):
     self.verify: int = 1
     self._cmd: str = 'bnorm'
 
-    super().__init__(line, db_obj)
+    if kwargs:
+      self.__dict__.update(
+          (key, value) for key, value in kwargs.items() if key in allowed_keys)
+    else:
+      super().__init__(line, db_obj)
+
     #allow cmd input to override driver line
     if cmd:
       self._cmd = cmd
@@ -140,13 +152,12 @@ class DriverBatchNorm(MIOpenDriver):
 
   def config_set_defaults(self) -> None:
     """Setting config DB defaults to avoid duplicates through SELECT"""
-    self.set_defaults(BN_DEFAULTS)
-
-  def set_defaults(self, defaults) -> None:
-    """Set fds defaults"""
-    for k, val in self.to_dict().items():
-      if val is None and k in defaults.keys():
-        setattr(self, k, defaults[k])
+    if self.has_layout_in("in", ['NCDHW', 'NDHWC']):
+      self.num_dims = 3
+    elif self.has_layout_in("in", ['NHWC', 'NCHW']):
+      self.num_dims = 2
+    else:
+      raise ValueError('Input tensor needs to support new dimension')
 
   @staticmethod
   def get_params(tok1: str) -> str:

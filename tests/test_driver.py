@@ -129,6 +129,13 @@ def conv_driver(args, logger, dbt, counts):
   assert d5_dict["out_layout"] == "NHWC"
   assert d5_dict["fil_layout"] == "NHWC"
 
+  cmd6 = "./bin/MIOpenDriver conv --batchsize 1 --spatial_dim 3 --pad_h 0 --pad_w 0 --pad_d 0 --conv_stride_h 1 --conv_stride_w 1 --conv_stride_d 1 --dilation_h 1 --dilation_w 1 --dilation_d 1 --group_count 1 --mode conv --pad_mode default --trans_output_pad_h 0 --trans_output_pad_w 0 --trans_output_pad_d 0 --out_layout NCDHW --in_d 1 --in_h 32 --in_w 32 --fil_d 1 --fil_h 3 --fil_w 3 --in_channels 3 --out_channels 32 --forw 2"
+  driver6 = DriverConvolution(cmd6)
+  assert driver6.in_layout == "NCDHW"
+  assert driver6.out_layout == "NCDHW"
+  assert driver6.fil_layout == "NCDHW"
+  assert driver6.spatial_dim == 3
+
 
 def bn_driver(args, logger, counts):
   cmd3 = "./bin/MIOpenDriver bnormfp16 -n 256 -c 64 -H 56 -W 56 -m 1 --forw 1 -b 0 -s 1 -r 1"
@@ -145,7 +152,8 @@ def bn_driver(args, logger, counts):
   assert d3_str["in_channels"] == 64
   assert d3_str["alpha"] == 1
   assert d3_str["beta"] == 0
-  assert d3_str["direction"] == 'F'
+  assert d3_str["direction"] == 1
+  assert d3_str["layout"] == "NCHW"
   assert driver3.get_input_t_id()
   c_dict3 = driver3.compose_tensors(keep_id=True)
   assert c_dict3["input_tensor"]
@@ -157,3 +165,23 @@ def bn_driver(args, logger, counts):
     driver_3_row = DriverBatchNorm(db_obj=row3)
     #compare DriverBN for same driver cmd built from Driver-line, vs built from that Driver-line's DB row
     assert driver3 == driver_3_row
+
+  cmd4 = "./bin/MIOpenDriver bnorm -n 8 -c 8 -H 12 -W 12 -D 12 -m 1 --forw 0 -b 1 -s 1 -r 1 --layout NDHWC"
+  dbt4 = MIOpenDBTables(session_id=None, config_type=args.config_type)
+  driver4 = DriverBatchNorm(cmd4)
+  d4_str = driver4.to_dict()
+  assert d4_str
+  assert d4_str["cmd"] == 'bnorm'
+  assert d4_str["layout"] == "NDHWC"
+  assert d4_str["num_dims"] == 3
+  assert d4_str["direction"] == 4
+
+  cmd5 = "./bin/MIOpenDriver bnorm -n 64 -c 1024 -H 14 -W 14 -m 1 --forw 1 -b 0 -s 0 -r 1 --layout NHWC"
+  dbt5 = MIOpenDBTables(session_id=None, config_type=args.config_type)
+  driver5 = DriverBatchNorm(cmd5)
+  d5_str = driver5.to_dict()
+  assert d5_str
+  assert d5_str["cmd"] == 'bnorm'
+  assert d5_str["layout"] == "NHWC"
+  assert d5_str["num_dims"] == 2
+  assert d5_str["direction"] == 1

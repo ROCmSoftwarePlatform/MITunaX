@@ -208,9 +208,11 @@ class DriverConvolution(MIOpenDriver):
     if self.spatial_dim == 3:
       self.set_defaults(CONV_3D_DEFAULTS)
       self.num_dims = 3
-    else:
+    elif self.spatial_dim == 2:
       self.set_defaults(CONV_2D_DEFAULTS)
       self.num_dims = 2
+    else:
+      raise ValueError(f"Spatial dim: {self.spatial_dim} not supported")
 
   def set_defaults(self, defaults) -> None:
     """Set fds defaults"""

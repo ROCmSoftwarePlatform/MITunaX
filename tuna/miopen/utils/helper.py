@@ -37,7 +37,7 @@ from tuna.dbBase.sql_alchemy import DbSession
 from tuna.machine import Machine
 from tuna.miopen.db.solver import get_solver_ids
 from tuna.utils.utility import check_qts
-from tuna.miopen.utils.metadata import MYSQL_LOCK_WAIT_TIMEOUT, BN_DEFAULTS
+from tuna.miopen.utils.metadata import MYSQL_LOCK_WAIT_TIMEOUT
 from tuna.miopen.utils.metadata import FUSION_DEFAULTS, CONV_2D_DEFAULTS, CONV_3D_DEFAULTS
 from tuna.utils.metadata import NUM_SQL_RETRIES
 from tuna.utils.db_utility import gen_update_query, session_retry

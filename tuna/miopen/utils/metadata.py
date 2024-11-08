@@ -622,8 +622,6 @@ FUSION_DEFAULTS = {
     'trans_output_pad_d': 0
 }
 
-BN_DEFAULTS = {'in_d': 1, 'out_channels': 1, 'num_dims': 2}
-
 ARCH_NUM_CU_LIST = [
     "gfx900-56", "gfx900-64", "gfx906-60", "gfx908-120", "gfx1030-36",
     "gfx90a-104", "gfx90a-110"

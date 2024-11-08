@@ -106,10 +106,11 @@ class MIOpenDriver(DriverBase):
   def construct_driver(self, line: str) -> bool:
     """Takes MIOpen line description of a configuration"""
 
-    LOGGER.info('Processing line: %s', line)
     if line.find('=') != -1:
+      LOGGER.info('Processing FDB key: %s', line)
       self.parse_fdb_key(line)
     elif line.find('MIOpenDriver') != -1:
+      LOGGER.info('Processing MIOpenDriver: %s', line)
       self.parse_driver_line(line)
     else:
       LOGGER.warning('Skipping line: %s', line)
@@ -269,6 +270,7 @@ class MIOpenDriver(DriverBase):
     self.compose_fds(tok, line)
     if "layout" in line:
       self.update_default_layouts(line)
+    self.config_set_defaults()
 
   def compose_fds(self, tok: list, line: str) -> bool:
     """Compose fds from driver line"""
