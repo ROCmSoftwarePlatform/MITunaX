@@ -171,8 +171,8 @@ def gold_base_update(session: DbSession,
     logger.info("Updating golden version %s -> %s.", base_gold_v, gold_v)
     update_q = f"update {golden_table} as cg inner join {golden_table} as ps on "\
     "cg.config=ps.config and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib and "\
-    "cg.opencl=ps.opencl and cg.solver=ps.solver and ps.arch=cg.arch and ps.num_cu=cg.num_cu"\
-    " set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz"\
+    "cg.opencl=ps.opencl and cg.solver=ps.solver and ps.arch=cg.arch and ps.num_cu=cg.num_cu "\
+    "set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz"\
     ", cg.kernel_time=ps.kernel_time, cg.kernel_group=ps.kernel_group, cg.session=ps.session"\
     f" where cg.golden_miopen_v={gold_v} and ps.golden_miopen_v={base_gold_v} and ps.valid=1"\
     " and ps.kernel_time>=0;"
@@ -203,13 +203,13 @@ def gold_session_update(session: DbSession,
   if overwrite:
     logger.info("Gold %s Update with session %s.", gold_v, tune_s)
     update_q = f"update {golden_table} as cg inner join {dbt.find_db_table.__tablename__} as ps on"\
-    " cg.config=ps.config and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib"\
-    "and cg.opencl=ps.opencl and cg.solver=ps.solver"\
-    " inner join session as s on ps.session=s.id and s.arch=cg.arch and s.num_cu=cg.num_cu"\
-    " set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz"\
-    ", cg.kernel_time=ps.kernel_time, cg.kernel_group=ps.kernel_group, cg.session=ps.session"\
-    f" where cg.golden_miopen_v={gold_v} and ps.session={tune_s} and ps.valid=1"\
-    " and ps.kernel_time>=0;"
+    " cg.config=ps.config and cg.fdb_key=ps.fdb_key and cg.alg_lib=ps.alg_lib "\
+    "and cg.opencl=ps.opencl and cg.solver=ps.solver "\
+    "inner join session as s on ps.session=s.id and s.arch=cg.arch and s.num_cu=cg.num_cu "\
+    "set cg.valid=ps.valid, cg.params=ps.params, cg.workspace_sz=ps.workspace_sz "\
+    ", cg.kernel_time=ps.kernel_time, cg.kernel_group=ps.kernel_group, cg.session=ps.session "\
+    f"where cg.golden_miopen_v={gold_v} and ps.session={tune_s} and ps.valid=1 "\
+    "and ps.kernel_time>=0;"
     session.execute(update_q)
 
   logger.info("Gold %s Insert session %s.", gold_v, tune_s)
