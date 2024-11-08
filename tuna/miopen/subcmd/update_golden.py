@@ -217,7 +217,7 @@ def gold_session_update(session: DbSession,
   ", fdb_key, params, kernel_time, workspace_sz, alg_lib, opencl, kernel_group, session, solver)"\
   f" select cfd.valid, {gold_v}, arch, num_cu, config, fdb_key, params, kernel_time"\
   ", workspace_sz, alg_lib, opencl, kernel_group, session, solver"\
-  f" from {dbt.find_db.__tablename__} as cfd inner join session as s on cfd.session=s.id"\
+  f" from {dbt.find_db_table.__tablename__} as cfd inner join session as s on cfd.session=s.id"\
   f" where session={tune_s} and cfd.valid=1 and kernel_time>=0;"
   session.execute(insert_q)
   session.commit()
