@@ -148,7 +148,7 @@ def finApplicability(){
         sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id} --mark_recurrent -f utils/recurrent_cfgs/resnet50_4jobs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
 
         sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_nhwc --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
-        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_nchw --mark_recurrent -f utils/configs/conv_configs_NCHW.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
+        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_nchw --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
         runsql("TRUNCATE table conv_solver_applicability")
 
         def num_cfg = runsql("SELECT count(*) from conv_config;")
@@ -199,7 +199,7 @@ def finFindCompileEnqueue(){
 
         sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id} --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
 
-        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id} --mark_recurrent -f utils/configs/conv_configs_NCHW.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
+        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id} --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
         def num_cfg = runsql("SELECT count(*) from conv_config;")
         println "Count(*) conv_config table: ${num_cfg}"
         sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id} -t recurrent_${branch_id} --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh1} ${job_lim}"
@@ -461,7 +461,7 @@ def perfCompile() {
         sh "cat ${celery_log}"
 
         sh "./tuna/go_fish.py miopen import_configs -t conv_${branch_id}_v2 --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
-        sh "./tuna/go_fish.py miopen import_configs -t conv_${branch_id}_v2 --mark_recurrent -f utils/configs/conv_configs_NCHW.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
+        sh "./tuna/go_fish.py miopen import_configs -t conv_${branch_id}_v2 --mark_recurrent -f utils/configs/conv_configs.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
         sh "./tuna/go_fish.py miopen load_job -t conv_${branch_id}_v2 -l conv_${branch_id}_v2 --session_id ${sesh1} --fin_steps miopen_perf_compile,miopen_perf_eval ${job_lim}"
         // Get the number of jobs
         def num_conv_jobs = runsql("SELECT count(*) from conv_job where state = 'new' and reason = 'conv_${branch_id}_v2'");

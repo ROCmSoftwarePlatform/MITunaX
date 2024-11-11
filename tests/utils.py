@@ -259,7 +259,7 @@ def add_test_jobs(miopen,
   assert (fin_worker.get_solvers())
 
   #get applicability
-  dbt = add_cfgs(label, 'conv_configs_NCHW.txt', label)
+  dbt = add_cfgs(label, 'conv_configs.txt', label)
   miopen.args.update_applicability = True
   worker_lst = miopen.compose_worker_list(machine_lst)
   for worker in worker_lst:

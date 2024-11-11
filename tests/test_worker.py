@@ -55,7 +55,7 @@ def add_job(w):
   args = CfgImportArgs()
   args.tag = 'tuna_pytest_worker'
   args.mark_recurrent = True
-  args.file_name = f"{this_path}/../utils/configs/conv_configs_NCHW.txt"
+  args.file_name = f"{this_path}/../utils/configs/conv_configs.txt"
   logger = setup_logger('test_add_job')
 
   dbt = MIOpenDBTables(session_id=w.session_id, config_type=args.config_type)

@@ -112,7 +112,7 @@ def parse_miopen_yaml1(miopen_yaml, miopen):
       'config_type': 'convolution',
       'docker_name': 'my_docker_name',
       'import_configs': {
-          'file_name': '../utils/configs/conv_configs_NCHW.txt',
+          'file_name': '../utils/configs/conv_configs.txt',
           'framework': 'Pytorch',
           'fw_version': 1,
           'md_version': 1,

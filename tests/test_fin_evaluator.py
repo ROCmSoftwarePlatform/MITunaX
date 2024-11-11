@@ -63,7 +63,7 @@ def add_cfgs():
   args = CfgImportArgs()
   args.tag = 'tuna_pytest_fin_eval'
   args.mark_recurrent = True
-  args.file_name = f"{this_path}/../utils/configs/conv_configs_NCHW.txt"
+  args.file_name = f"{this_path}/../utils/configs/conv_configs.txt"
 
   dbt = MIOpenDBTables(config_type=args.config_type)
   import_cfgs(args, dbt, setup_logger('test_fin_eval'))

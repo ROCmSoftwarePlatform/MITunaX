@@ -20,7 +20,7 @@ init_session:
 import_configs:
   enabled: true
   tag: 'someTag'
-  file_name: '../utils/configs/conv_configs_NCHW.txt'
+  file_name: '../utils/configs/conv_configs.txt'
   model: 'Alexnet'
   md_version: 1
   framework: 'Pytorch'
