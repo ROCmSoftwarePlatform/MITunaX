@@ -207,6 +207,7 @@ class MIOpenDriver(DriverBase):
     i_dict['data_type'] = TENSOR_PRECISION[self.cmd]
     i_dict['num_dims'] = self.num_dims
     i_dict['dim0'] = 1
+    i_dict['layout'] = self.in_layout
 
     if self.in_layout in ('NCHW', 'NCDHW'):
       i_dict['dim1'] = self.in_channels
@@ -219,7 +220,6 @@ class MIOpenDriver(DriverBase):
       i_dict['dim2'] = self.in_h
       i_dict['dim3'] = self.in_w
       i_dict['dim4'] = self.in_channels
-      i_dict['layout'] = self.in_layout
 
     return i_dict
 
