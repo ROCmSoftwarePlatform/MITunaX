@@ -214,7 +214,8 @@ class MIOpenDriver(DriverBase):
       i_dict['dim2'] = self.in_h
       i_dict['dim3'] = self.in_w
       i_dict['dim4'] = self.in_channels
-      i_dict['layout'] = self.get_layout("in")
+
+    i_dict['layout'] = self.get_layout("in")
 
     if self.has_layout_in("in", ['NCDHW', 'NDHWC']):
       i_dict['num_dims'] = 3

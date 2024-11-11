@@ -290,14 +290,14 @@ class DriverConvolution(MIOpenDriver):
       w_dict['dim2'] = self.fil_d
       w_dict['dim3'] = self.fil_h
       w_dict['dim4'] = self.fil_w
-      w_dict['layout'] = self.fil_layout
     elif self.fil_layout in ('NHWC', 'NDHWC'):
       w_dict['dim0'] = self.out_channels
       w_dict['dim1'] = self.in_channels
       w_dict['dim2'] = self.fil_d
       w_dict['dim3'] = self.fil_h
       w_dict['dim4'] = self.fil_w
-      w_dict['layout'] = self.fil_layout
+
+    w_dict['layout'] = self.fil_layout
 
     return w_dict
 
