@@ -113,7 +113,7 @@ def test_update_golden():
   assert verify_no_duplicates(entries, logger) == False
 
   args.create_perf_table = True
-  assert create_perf_table(args, logger)
+  assert create_perf_table(dbt, args, logger)
 
 
 def copy(dest, src):
