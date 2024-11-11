@@ -248,7 +248,7 @@ def run_update_golden(args: argparse.Namespace, logger: logging.Logger):
     if args.session_id:
 
       def actuator2(func):
-        return func(session, args.golden_v, args.session_id, logger,
+        return func(session, dbt, args.golden_v, args.session_id, logger,
                     args.overwrite)
 
       session_retry(session, gold_session_update, functools.partial(actuator2),

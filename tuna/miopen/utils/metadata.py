@@ -486,7 +486,7 @@ FDS_3D_CONV = [
 ]
 
 #NOTE: Alex to check
-FDS_3D_BN = ['in_channels', 'in_w', 'in_w', 'batchsize', 'layout']
+FDS_3D_BN = ['in_channels', 'in_h', 'in_w', 'in_d', 'batchsize', 'layout']
 
 FDS_2D_CONV = [
     'pad_h', 'pad_w', 'out_channels', 'fil_w', 'fil_h', 'dilation_w',
@@ -495,7 +495,8 @@ FDS_2D_CONV = [
 ]
 
 #NOTE: Alex to check
-FDS_2D_BN = ['in_channels', 'in_w', 'in_w', 'batchsize', 'layout']
+FDS_2D_BN = ['in_channels', 'in_d', 'in_w', ''
+             'batchsize', 'layout']
 
 MIOPEN_ALG_LIST = [
     'MIOPEN_DEBUG_CONV_FFT', 'MIOPEN_DEBUG_CONV_DIRECT',
