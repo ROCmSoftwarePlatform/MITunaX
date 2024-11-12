@@ -287,7 +287,7 @@ async def test_celery_workers():
   with DbSession() as session:
     count = session.query(dbt.job_table).filter(dbt.job_table.session==miopen.args.session_id)\
                                          .filter(dbt.job_table.state=='compile_start').count()
-  assert count == 4
+  assert count == num_jobs
 
 
 TUNA_CELERY_BROKER_HOST, TUNA_CELERY_BROKER_PORT, TUNA_CELERY_BROKER_USER, TUNA_CELERY_BROKER_PWD = get_broker_env(
