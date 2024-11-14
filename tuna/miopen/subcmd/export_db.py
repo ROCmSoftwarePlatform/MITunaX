@@ -36,7 +36,7 @@ import logging
 from tuna.dbBase.sql_alchemy import DbSession
 from tuna.miopen.db.find_db import FindDBMixin
 from tuna.miopen.db.mixin_tables import GoldenMixin
-from tuna.miopen.db.tables import MIOpenDBTables
+from tuna.miopen.db.tables import MIOpenDBTables, ConfigType
 from tuna.miopen.utils.metadata import SQLITE_PERF_DB_COLS
 from tuna.utils.db_utility import DB_Type
 from tuna.miopen.db.solver import get_id_solvers
@@ -356,35 +356,46 @@ def export_kdb(dbt: MIOpenDBTables,
   return write_kdb(args.arch, args.num_cu, kern_db, logger, args.filename)
 
 
-def create_sqlite_tables(arch, num_cu, filename=None):
+def create_sqlite_tables(arch,
+                         num_cu,
+                         filename=None,
+                         config_type=ConfigType.convolution):
   """create sqlite3 tables"""
   local_path = get_filename(arch, num_cu, filename, False, DB_Type.PERF_DB)
 
   cnx = sqlite3.connect(local_path)
 
   cur = cnx.cursor()
-  cur.execute(
-      "CREATE TABLE IF NOT EXISTS `config` (`id` INTEGER PRIMARY KEY ASC,`layout` TEXT NOT NULL,"
-      "`data_type` TEXT NOT NULL,`direction` TEXT NOT NULL,`spatial_dim` INT NOT NULL,"
-      "`in_channels` INT NOT NULL,`in_h` INT NOT NULL,`in_w` INT NOT NULL,`in_d` INT NOT NULL,"
-      "`fil_h` INT NOT NULL,`fil_w` INT NOT NULL,`fil_d` INT NOT NULL,"
-      "`out_channels` INT NOT NULL, `batchsize` INT NOT NULL,"
-      "`pad_h` INT NOT NULL,`pad_w` INT NOT NULL,`pad_d` INT NOT NULL,"
-      "`conv_stride_h` INT NOT NULL,`conv_stride_w` INT NOT NULL,`conv_stride_d` INT NOT NULL,"
-      "`dilation_h` INT NOT NULL,`dilation_w` INT NOT NULL,`dilation_d` INT NOT NULL,"
-      "`bias` INT NOT NULL,`group_count` INT NOT NULL)")
-  cur.execute(
-      "CREATE TABLE IF NOT EXISTS `perf_db` (`id` INTEGER PRIMARY KEY ASC,`solver` TEXT NOT NULL,"
-      "`config` INTEGER NOT NULL, `params` TEXT NOT NULL)")
 
-  cur.execute(
-      "CREATE UNIQUE INDEX IF NOT EXISTS `idx_config` ON config( layout,data_type,direction,"
-      "spatial_dim,in_channels,in_h,in_w,in_d,fil_h,fil_w,fil_d,out_channels,"
-      "batchsize,pad_h,pad_w,pad_d,conv_stride_h,conv_stride_w,conv_stride_d,"
-      "dilation_h,dilation_w,dilation_d,bias,group_count )")
-  cur.execute(
-      "CREATE UNIQUE INDEX IF NOT EXISTS `idx_perf_db` ON perf_db(solver, config)"
-  )
+  if config_type == ConfigType.convolution:
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS `config` (`id` INTEGER PRIMARY KEY ASC,`layout` TEXT NOT NULL,"
+        "`data_type` TEXT NOT NULL,`direction` TEXT NOT NULL,`spatial_dim` INT NOT NULL,"
+        "`in_channels` INT NOT NULL,`in_h` INT NOT NULL,`in_w` INT NOT NULL,`in_d` INT NOT NULL,"
+        "`fil_h` INT NOT NULL,`fil_w` INT NOT NULL,`fil_d` INT NOT NULL,"
+        "`out_channels` INT NOT NULL, `batchsize` INT NOT NULL,"
+        "`pad_h` INT NOT NULL,`pad_w` INT NOT NULL,`pad_d` INT NOT NULL,"
+        "`conv_stride_h` INT NOT NULL,`conv_stride_w` INT NOT NULL,`conv_stride_d` INT NOT NULL,"
+        "`dilation_h` INT NOT NULL,`dilation_w` INT NOT NULL,`dilation_d` INT NOT NULL,"
+        "`bias` INT NOT NULL,`group_count` INT NOT NULL)")
+    cur.execute(
+        "CREATE TABLE IF NOT EXISTS `perf_db` (`id` INTEGER PRIMARY KEY ASC,`solver` TEXT NOT NULL,"
+        "`config` INTEGER NOT NULL, `params` TEXT NOT NULL)")
+
+    cur.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS `idx_config` ON config( layout,data_type,direction,"
+        "spatial_dim,in_channels,in_h,in_w,in_d,fil_h,fil_w,fil_d,out_channels,"
+        "batchsize,pad_h,pad_w,pad_d,conv_stride_h,conv_stride_w,conv_stride_d,"
+        "dilation_h,dilation_w,dilation_d,bias,group_count )")
+    cur.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS `idx_perf_db` ON perf_db(solver, config)"
+    )
+  elif config_type == ConfigType.batch_norm:
+    raise NotImplementedError(
+        'export_db create_sqlite_tables() does not support BN')
+  else:
+    raise NotImplementedError(
+        f"export_db create_sqlite_tables() does not support {config_type}")
 
   cur.close()
   cnx.commit()
@@ -409,7 +420,8 @@ def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
 def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
                logger: logging.Logger):
   """ export perf db from mysql to sqlite """
-  cnx, local_path = create_sqlite_tables(args.arch, args.num_cu, args.filename)
+  cnx, local_path = create_sqlite_tables(args.arch, args.num_cu, args.filename,
+                                         args.config_type)
   num_perf = 0
   cfg_map: Dict[Any, Any] = {}
   solvers: Dict[str, Dict[str, Any]] = {}
@@ -452,7 +464,7 @@ def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
 def run_export_db(args: argparse.Namespace, logger: logging.Logger):
   """run export db script"""
   result_file = ''
-  dbt = MIOpenDBTables(session_id=args.session_id)
+  dbt = MIOpenDBTables(session_id=args.session_id, config_typ=args.config_type)
 
   if args.session_id:
     try:

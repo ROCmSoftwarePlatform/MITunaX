@@ -226,10 +226,10 @@ def finFindCompileEnqueue(){
         runsql("alter table bn_job AUTO_INCREMENT=1;")
 
 
-        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_bn -f utils/configs/batch_norm.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
+        sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_bn -f utils/configs/batch_norm.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1 -C batch_norm"
         def num_cfg_bn = runsql("SELECT count(*) from bn_config;")
         println "Count(*) bn_config table: ${num_cfg}"
-        sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id}_bn -t recurrent_${branch_id}_bn --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh1} ${job_lim} -C batch_norm"
+        sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id}_bn -t recurrent_${branch_id}_bn --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh1} -C batch_norm"
 
         sh "printenv"
         def num_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn';").toInteger()
@@ -476,8 +476,8 @@ def perfCompile() {
 
         //Batch Norm
         sh "./tuna/go_fish.py miopen import_configs -t bn_${branch_id} -f utils/configs/batch_norm.txt -C batch_norm --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
-        sh "./tuna/go_fish.py miopen load_job -t bn_${branch_id} -l bn_${branch_id} --session_id ${sesh1} --fin_steps miopen_perf_compile,miopen_perf_eval ${job_lim}"
-        sh "./tuna/go_fish.py miopen --fin_steps miopen_perf_compile -l bn_${branch_id} --session_id ${sesh1} --enqueue_only"
+        sh "./tuna/go_fish.py miopen load_job -t bn_${branch_id} -l bn_${branch_id} --session_id ${sesh1} --fin_steps miopen_perf_compile,miopen_perf_eval -C batch_norm"
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_perf_compile -l bn_${branch_id} --session_id ${sesh1} --enqueue_only -C batch_norm"
         sh "kill -9 ${pid}"
         def compiled_jobs_bn = runsql("SELECT count(*) from bn_job where state = 'compiled' and reason = 'bn_${branch_id}';")
         if(compiled_jobs_bn.toInteger() == 0)

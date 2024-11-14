@@ -88,7 +88,6 @@ class FinClass(WorkerInterface):
 
     self.config_type = ConfigType.convolution if self.config_type is None else ConfigType(
         self.config_type)
-    print(self.config_type)
 
     super().__init__(**kwargs)
 
@@ -546,6 +545,7 @@ class FinClass(WorkerInterface):
         solver = slv_map['name']
         tunable = int(slv_map['tunable'])
         config_type = slv_map['type']
+        valid = slv_map['valid']
         try:
           sids.append(idx)
           if idx > max_id:
@@ -553,7 +553,7 @@ class FinClass(WorkerInterface):
 
           new_s = self.dbt.solver_table(id=idx,
                                         solver=solver,
-                                        valid=1,
+                                        valid=valid,
                                         tunable=tunable,
                                         config_type=config_type,
                                         is_dynamic=slv_map['dynamic'])
@@ -566,7 +566,7 @@ class FinClass(WorkerInterface):
           session.rollback()
           session.query(self.dbt.solver_table).filter(
               self.dbt.solver_table.id == idx).update({
-                  self.dbt.solver_table.valid: 1,
+                  self.dbt.solver_table.valid: valid,
                   self.dbt.solver_table.solver: solver,
                   self.dbt.solver_table.tunable: tunable
               })
