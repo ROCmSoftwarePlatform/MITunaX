@@ -8,9 +8,9 @@ echo "${util_lib}"
 library "${util_lib}"
 
 def initSession(){
-  backend = "HIPNOGPU"
+  backend = "HIP"
   def tuna_docker
-  def tuna_docker_name = utils.getDockerName("HIPNOGPU")
+  def tuna_docker_name = utils.getDockerName("HIP")
   def build_args = " --network host --build-arg ROCMVERSION=${params.rocm_version} --build-arg OSDB_BKC_VERSION=${params.osdb_bkc_version} --build-arg BUILD_MIOPEN_DEPS=${params.build_miopen_deps} --build-arg BACKEND=${backend} --build-arg MIOPEN_BRANCH=${miopen_branch_name} --build-arg DB_NAME=${params.db_name} --build-arg DB_USER_NAME=${db_user} --build-arg DB_USER_PASSWORD=${db_password} --build-arg DB_HOSTNAME=${db_host} --build-arg MIOPEN_USE_MLIR=${params.use_mlir}"
 
   if(params.base_image != '')
@@ -25,19 +25,17 @@ def initSession(){
 
   tuna_docker = docker.build("${tuna_docker_name}", "${build_args} ." )
 
-  def docker_run_args = "--network host  --dns 8.8.8.8 --device=/dev/kfd --device /dev/dri:/dev/dri:rw --volume /dev/dri:/dev/dri:rw --group-add video -e TUNA_DB_HOSTNAME=${db_host} -e TUNA_DB_NAME=${params.db_name} -e TUNA_DB_USER_NAME=${db_user} -e TUNA_DB_PASSWORD=${db_password} -e gateway_ip=${gateway_ip} -e gateway_port=${gateway_port} -e gateway_user=${gateway_user} -e TUNA_LOGLEVEL=${params.tuna_loglevel}"
-
   def num_session_prev = utils.runsql("SELECT count(*) from session where reason='${job_label}';")
 
   if(params.arch != '' && params.num_cu != '')
   {
     def margs = "-a ${params.arch} -n ${params.num_cu}"
-    sh "docker run ${docker_run_args} ${tuna_docker_name} ./tuna/go_fish.py miopen --init_session -l ${job_label} ${margs} --docker_name ${base_image}"
+    sh "docker run ${docker_args} ${tuna_docker_name} ./tuna/go_fish.py miopen --init_session -l ${job_label} ${margs} --docker_name ${base_image}"
   }
   else
   {
     tuna_docker.push()
-    sh "srun --no-kill -p ${slurm_partition} -N 1 -l bash -c 'docker run ${docker_run_args} ${tuna_docker_name} ./tuna/go_fish.py miopen --init_session -l ${job_label} --docker_name ${base_image}'"
+    sh "srun --no-kill -p ${slurm_partition} -N 1 -l bash -c 'docker run ${docker_args} ${tuna_docker_name} ./tuna/go_fish.py miopen --init_session -l ${job_label} --docker_name ${base_image}'"
   }
 
   def num_session_now = utils.runsql("SELECT count(*) from session where reason='${job_label}';")
@@ -71,6 +69,7 @@ pipeline {
       db_user = "${params.db_user}"
       db_password = "${params.db_password}"
       branch_id = "${params.branch_name}_${BUILD_ID}"
+      docker_args = "--network host --device=/dev/kfd --device /dev/dri:/dev/dri:rw --volume /dev/dri:/dev/dri:rw --group-add video -e TUNA_LOGLEVEL=${tuna_loglevel} -e TUNA_CELERY_BROKER_HOST=${PIPELINE_CELERY_BROKER_HOST} -e TUNA_CELERY_BROKER_USER=${TUNA_CELERY_BROKER_USER} -e TUNA_CELERY_BROKER_PWD=${TUNA_CELERY_BROKER_PWD} -e TUNA_CELERY_BROKER_PORT=${TUNA_CELERY_BROKER_PORT} -e TUNA_CELERY_BACKEND_HOST=${PIPELINE_CELERY_BACKEND_HOST} -e TUNA_CELERY_BACKEND_PORT=${TUNA_CELERY_BACKEND_PORT} -e TUNA_DB_HOSTNAME=${db_host} -e TUNA_DB_NAME=${params.db_name} -e TUNA_DB_USER_NAME=${db_user} -e TUNA_DB_PASSWORD=${db_password} -e gateway_ip=${gateway_ip} -e gateway_port=${gateway_port} -e gateway_user=${gateway_user}"
   }
   parameters {
     string(name: 'branch_name', defaultValue: 'init_session', description: '')

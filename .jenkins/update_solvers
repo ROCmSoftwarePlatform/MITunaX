@@ -24,7 +24,7 @@ pipeline {
       db_password = "${params.db_password}"
       branch_name = "${params.branch_name}"
       backend = 'HIP'
-      docker_args = "--network host -e TUNA_LOGLEVEL=${tuna_loglevel} -e TUNA_DB_HOSTNAME=${db_host} -e TUNA_DB_NAME=${params.db_name} -e TUNA_DB_USER_NAME=${db_user} -e TUNA_DB_PASSWORD=${db_password} -e gateway_ip=${gateway_ip} -e gateway_port=${gateway_port} -e gateway_user=${gateway_user} --privileged --device=/dev/kfd --device /dev/dri:/dev/dri:rw --volume /dev/dri:/dev/dri:rw --group-add video"
+      docker_args = "--network host --device=/dev/kfd --device /dev/dri:/dev/dri:rw --volume /dev/dri:/dev/dri:rw --group-add video -e TUNA_LOGLEVEL=${tuna_loglevel} -e TUNA_CELERY_BROKER_HOST=${PIPELINE_CELERY_BROKER_HOST} -e TUNA_CELERY_BROKER_USER=${TUNA_CELERY_BROKER_USER} -e TUNA_CELERY_BROKER_PWD=${TUNA_CELERY_BROKER_PWD} -e TUNA_CELERY_BROKER_PORT=${TUNA_CELERY_BROKER_PORT} -e TUNA_CELERY_BACKEND_HOST=${PIPELINE_CELERY_BACKEND_HOST} -e TUNA_CELERY_BACKEND_PORT=${TUNA_CELERY_BACKEND_PORT} -e TUNA_DB_HOSTNAME=${db_host} -e TUNA_DB_NAME=${params.db_name} -e TUNA_DB_USER_NAME=${db_user} -e TUNA_DB_PASSWORD=${db_password} -e gateway_ip=${gateway_ip} -e gateway_port=${gateway_port} -e gateway_user=${gateway_user}"
       branch_id = "${params.branch_name}_${BUILD_ID}"
       CREDS = credentials("$DOCKER_CRED")
   }
