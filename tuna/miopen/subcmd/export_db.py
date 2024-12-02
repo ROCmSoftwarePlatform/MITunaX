@@ -110,15 +110,15 @@ def fin_net_cfg_job(cfg_lst,
   job_list = []
   if config_type == ConfigType.convolution:
     for config in cfg_lst:
-        job = {
-            "steps": ["network_config"],
-            "arch": 'gfx908',
-            "num_cu": 120,
-            "config_tuna_id": config.id,
-            "direction": int(INVERS_DIR_MAP[config.direction]),
-            "config": compose_config_obj(config)
-        }
-        job_list.append(job)
+      job = {
+          "steps": ["network_config"],
+          "arch": 'gfx908',
+          "num_cu": 120,
+          "config_tuna_id": config.id,
+          "direction": int(INVERS_DIR_MAP[config.direction]),
+          "config": compose_config_obj(config)
+      }
+      job_list.append(job)
   else:
     logger.error(f"Config type not implemented: {config_type}")
 
