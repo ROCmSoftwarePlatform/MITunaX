@@ -45,6 +45,7 @@ from tuna.miopen.db.solver import get_id_solvers
 from tuna.utils.logger import setup_logger
 from tuna.miopen.utils.analyze_parse_db import get_config_sqlite, insert_solver_sqlite
 from tuna.miopen.utils.analyze_parse_db import get_sqlite_cfg_dict
+from tuna.miopen.utils.config_type import ConfigType
 from tuna.miopen.utils.metadata import INVERS_DIR_MAP
 from tuna.miopen.parse_miopen_args import get_export_db_parser
 from tuna.miopen.worker.fin_utils import compose_config_obj
@@ -100,21 +101,26 @@ def get_filename(arch: str,
   return final_name
 
 
-def fin_net_cfg_job(cfg_lst):
+def fin_net_cfg_job(cfg_lst,
+                    logger,
+                    config_type: ConfigType = ConfigType.convolution):
   """Construct a fin network_config job from a config
   """
   #arch and num_cu are required by fin, but unused for this command
   job_list = []
-  for config in cfg_lst:
-    job = {
-        "steps": ["network_config"],
-        "arch": 'gfx908',
-        "num_cu": 120,
-        "config_tuna_id": config.id,
-        "direction": int(INVERS_DIR_MAP[config.direction]),
-        "config": compose_config_obj(config)
-    }
-    job_list.append(job)
+  if config_type == ConfigType.convolution:
+    for config in cfg_lst:
+        job = {
+            "steps": ["network_config"],
+            "arch": 'gfx908',
+            "num_cu": 120,
+            "config_tuna_id": config.id,
+            "direction": int(INVERS_DIR_MAP[config.direction]),
+            "config": compose_config_obj(config)
+        }
+        job_list.append(job)
+  else:
+    logger.error(f"Config type not implemented: {config_type}")
 
   return job_list
 
@@ -125,7 +131,7 @@ def fin_db_key(config_lst, logger):
   _, fin_ofile = tempfile.mkstemp(suffix='.json')
 
   with open(fin_ifile, 'w') as in_file:  # pylint: disable=unspecified-encoding
-    in_file.write(json.dumps(fin_net_cfg_job(config_lst), indent=2))
+    in_file.write(json.dumps(fin_net_cfg_job(config_lst, logger), indent=2))
 
   fin_cmd = f"/opt/rocm/bin/fin -i {fin_ifile} -o {fin_ofile}"
   logger.info('Executing fin cmd: %s', fin_cmd)
