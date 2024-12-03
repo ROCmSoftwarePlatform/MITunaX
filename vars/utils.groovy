@@ -264,7 +264,8 @@ def finFindEval(){
         env.PYTHONPATH=env.WORKSPACE
         env.PATH="${env.WORKSPACE}/tuna:${env.PATH}"
         env.TUNA_CELERY_BROKER_HOST="${db_host}"
-        def sesh1 = runsql("select id from session order by id asc limit 1")
+        def sesh1 = 1 //runsql("select id from session order by id asc limit 1")
+        def sesh2 = 2 //runsql("select id from session order by id asc limit 1")
         def pids = []
 
         def num_jobs = runsql("SELECT count(*) from conv_job WHERE reason = 'finFind_${branch_id}' AND state = 'compiled';").toInteger()
@@ -439,7 +440,7 @@ def perfCompile() {
         env.TUNA_CELERY_BROKER_HOST="${db_host}"
         runsql("DELETE FROM conv_job;")
         def sesh1 = 1 //runsql("select id from session order by id asc limit 1")
-        def sesh1 = 2 //runsql("select id from session order by id asc limit 1")
+        def sesh2 = 2 //runsql("select id from session order by id asc limit 1")
         celery_log="${env.WORKSPACE}/tuna/${branch_id}_perf_compile_celery_log.log"
         sh "touch ${celery_log}"
         def pid = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug -E --detach --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
