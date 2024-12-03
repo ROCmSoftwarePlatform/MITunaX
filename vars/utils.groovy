@@ -189,7 +189,8 @@ def finFindCompileEnqueue(){
         env.gateway_user = "${gateway_user}"
         env.PATH="${env.WORKSPACE}/tuna:${env.PATH}"
         env.TUNA_CELERY_BROKER_HOST="${db_host}"
-        def sesh1 = runsql("select id from session order by id asc limit 1")
+        def sesh1 = 1 //runsql("select id from session order by id asc limit 1")
+        def sesh2 = 2 //runsql("select id from session order by id desc limit 1")
         celery_log="${env.WORKSPACE}/tuna/${branch_id}_find_compile_celery_log.log"
         sh "touch ${celery_log}"
 
@@ -229,15 +230,15 @@ def finFindCompileEnqueue(){
         sh "./tuna/go_fish.py miopen import_configs -t recurrent_${branch_id}_bn -f utils/configs/batch_norm.txt --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1 -C batch_norm"
         def num_cfg_bn = runsql("SELECT count(*) from bn_config;")
         println "Count(*) bn_config table: ${num_cfg}"
-        sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id}_bn -t recurrent_${branch_id}_bn --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh1} -C batch_norm"
+        sh "./tuna/go_fish.py miopen load_job -l finFind_${branch_id}_bn -t recurrent_${branch_id}_bn --fin_steps \"miopen_find_compile,miopen_find_eval\" --session_id ${sesh2} -C batch_norm"
 
         sh "printenv"
         def num_jobs_bn = runsql("SELECT count(*) from bn_job WHERE reason = 'finFind_${branch_id}_bn';").toInteger()
-        def pid_bn = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
+        def pid_bn = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh2} & echo \$!", returnStdout: true).trim()
         sh "cat ${celery_log}"
 
         sh "printenv"
-        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_compile -l finFind_${branch_id}_bn --session_id ${sesh1} -C batch_norm --enqueue_only"
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_compile -l finFind_${branch_id}_bn --session_id ${sesh2} -C batch_norm --enqueue_only"
 
         sh "kill -9 ${pid_bn}"
         sh "cat ${celery_log}"
@@ -314,7 +315,7 @@ def finFindEval(){
             counter++
         }
 
-        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_eval -l finFind_${branch_id}_bn --session_id ${sesh1} -C batch_norm --enqueue_only"
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_find_eval -l finFind_${branch_id}_bn --session_id ${sesh2} -C batch_norm --enqueue_only"
         //killing off celery workers by pid
         pid_list.each{
           try{
@@ -437,7 +438,8 @@ def perfCompile() {
         env.PATH="${env.WORKSPACE}/tuna:${env.PATH}"
         env.TUNA_CELERY_BROKER_HOST="${db_host}"
         runsql("DELETE FROM conv_job;")
-        def sesh1 = runsql("select id from session order by id asc limit 1")
+        def sesh1 = 1 //runsql("select id from session order by id asc limit 1")
+        def sesh1 = 2 //runsql("select id from session order by id asc limit 1")
         celery_log="${env.WORKSPACE}/tuna/${branch_id}_perf_compile_celery_log.log"
         sh "touch ${celery_log}"
         def pid = sh(script: "celery -A tuna.celery_app.celery_app worker -l debug -E --detach --logfile=${celery_log} -n tuna_${branch_id} -Q compile_q_${db_name}_sess_${sesh1} & echo \$!", returnStdout: true).trim()
@@ -476,8 +478,8 @@ def perfCompile() {
 
         //Batch Norm
         sh "./tuna/go_fish.py miopen import_configs -t bn_${branch_id} -f utils/configs/batch_norm.txt -C batch_norm --model Resnet50 --md_version 1 --framework Pytorch --fw_version 1"
-        sh "./tuna/go_fish.py miopen load_job -t bn_${branch_id} -l bn_${branch_id} --session_id ${sesh1} --fin_steps miopen_perf_compile,miopen_perf_eval -C batch_norm"
-        sh "./tuna/go_fish.py miopen --fin_steps miopen_perf_compile -l bn_${branch_id} --session_id ${sesh1} --enqueue_only -C batch_norm"
+        sh "./tuna/go_fish.py miopen load_job -t bn_${branch_id} -l bn_${branch_id} --session_id ${sesh2} --fin_steps miopen_perf_compile,miopen_perf_eval -C batch_norm"
+        sh "./tuna/go_fish.py miopen --fin_steps miopen_perf_compile -l bn_${branch_id} --session_id ${sesh2} --enqueue_only -C batch_norm"
         sh "kill -9 ${pid}"
         def compiled_jobs_bn = runsql("SELECT count(*) from bn_job where state = 'compiled' and reason = 'bn_${branch_id}';")
         if(compiled_jobs_bn.toInteger() == 0)
