@@ -53,6 +53,13 @@ def __update_fdb_w_kernels(  #pylint: disable=too-many-arguments,too-many-locals
     check_str: str = 'find_compiled') -> list:
   """update find db + kernels from json results"""
   status = []
+  if dbt.config_type != ConfigType.convolution:
+    return [{
+        'solver': 'all',
+        'success': False,
+        'result': 'Find Compile: BN FDB key parsing not implemented'
+    }]
+
   solver_id_map = get_solver_ids()
   if result_str in fin_json.keys():
     for fdb_obj in fin_json.get(result_str):
@@ -64,7 +71,7 @@ def __update_fdb_w_kernels(  #pylint: disable=too-many-arguments,too-many-locals
         fdb_entry = __compose_fdb_entry(session, fin_json, fdb_obj, session_id,
                                         dbt, config, job, fdb_attr,
                                         solver_id_map, pending)
-        __check_layout_mismatch(fdb_entry, slv_stat, config)
+        __check_layout_mismatch(fdb_entry, slv_stat, config, dbt)
         if not pending:
           query = gen_update_query(fdb_entry, fdb_attr,
                                    dbt.find_db_table.__tablename__)
@@ -109,6 +116,13 @@ def __update_fdb_w_kernels(  #pylint: disable=too-many-arguments,too-many-locals
 def process_pdb_compile(session, fin_json, job, dbt, solver_id_map):
   """retrieve perf db compile json results"""
   status = []
+  if dbt.config_type != ConfigType.convolution:
+    LOGGER.warning('BN PDB key parsing not implemented')
+    return [{
+        'solver': 'all',
+        'success': False,
+        'result': 'Perf Compile: BN PDB key parsing not implemented'
+    }]
   if fin_json['miopen_perf_compile_result']:
 
     def actuator(func, pdb_obj, dbt, job, solver_id_map):
@@ -160,12 +174,31 @@ def populate_kernels(kern_obj, kernel_obj):
   return kernel_obj
 
 
-def __check_layout_mismatch(fdb_entry: SimpleDict, status: dict,
-                            config) -> bool:
+def __check_layout_mismatch(fdb_entry: SimpleDict, status: dict, config,
+                            dbt) -> bool:
   """Check that the fdb key returned by fin matches the config being tuned,
   states to error if not"""
   fdb_key = fdb_entry.fdb_key
-  fds, vals, _, _ = parse_pdb_key(fdb_key)
+  try:
+    fds, vals, _, _ = parse_pdb_key(fdb_key, dbt.config_type)
+  except CustomError as err:
+    print(err)
+    return False
+
+  if dbt.config_type == ConfigType.convolution:
+    __check_layout_mismatch_conv(fds, vals, fdb_entry, status, config, dbt)
+  elif dbt.config_type == ConfigType.batch_norm:
+    __check_layout_mismatch_bn(fds, vals, fdb_entry, status, config, dbt)
+  else:
+    raise CustomError(
+        'layout missmatch check for config type: %s not implemented',
+        dbt.config_type)
+
+
+def __check_layout_mismatch_conv(fdb_entry: SimpleDict, status: dict,
+                                 config: dict, dbt) -> bool:
+  """Check layout missmatch for conv"""
+
   key_layout = vals[fds.index('out_layout')]
   cfg_layout = config.out_layout
 
@@ -177,6 +210,12 @@ def __check_layout_mismatch(fdb_entry: SimpleDict, status: dict,
     return False
 
   return True
+
+
+def __check_layout_mismatch_bn(fdb_entry: SimpleDict, status: dict, config,
+                               dbt) -> bool:
+  """Check layout missmatch for BN"""
+  raise NotImplementedError("Not implemented")
 
 
 def __compose_kernel_entry(session, fdb_obj, fdb_entry, dbt):

@@ -28,6 +28,7 @@
 import argparse
 import _io
 from tuna.miopen.utils.parsing import parse_pdb_key, build_driver_cmd
+from tuna.miopen.utils.config_type import ConfigType
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,7 +75,8 @@ def main():
         vals: list
         precision: str
         direction: int
-        fds, vals, precision, direction = parse_pdb_key(elem[0])
+        fds, vals, precision, direction = parse_pdb_key(elem[0],
+                                                        ConfigType.convolution)
         #DEPRECATED
         cmd: str = build_driver_cmd(fds, vals, precision, direction)
         outstr = f'"{cmd}",{elem[1]}'

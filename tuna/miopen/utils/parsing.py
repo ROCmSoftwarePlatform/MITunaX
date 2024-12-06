@@ -42,7 +42,7 @@ LOGGER = setup_logger()
 
 
 #NOTE: only conv support, BN support TBD
-def parse_pdb_key(key, config_type=ConfigType.convolution):
+def parse_pdb_key(key, config_type):
   """return network parameters from fdb key string"""
   fds_3D = None
   fds_2D = None
@@ -50,10 +50,11 @@ def parse_pdb_key(key, config_type=ConfigType.convolution):
     fds_3D = FDS_3D_CONV
     fds_2D = FDS_2D_CONV
   elif config_type == ConfigType.batch_norm:
-    fds_3D = FDS_3D_BN
-    fds_2D = FDS_2D_BN
+    #fds_3D = FDS_3D_BN
+    #fds_2D = FDS_2D_BN
+    raise CustomError('BN fdb/pdb key parsing not implemented')
   else:
-    raise ValueError(
+    raise CustomError(
         'New config type support needs to be added for pdb key parsing')
 
   if key.find('=') != -1:
@@ -71,11 +72,11 @@ def parse_pdb_key(key, config_type=ConfigType.convolution):
       raise ValueError('Group count has to be integer')
 
   if search(pattern_3d, key):
-    vals, precision, direction = parse_3d(key, group_count)
+    vals, precision, direction = parse_3d(key, group_count, config_type)
     fds = fds_3D
     vals.append('3')
   else:
-    vals, precision, direction = parse_2d(key, group_count)
+    vals, precision, direction = parse_2d(key, group_count, config_type)
     fds = fds_2D
     vals.append('2')
   fds.append('spatial_dim')
@@ -90,11 +91,21 @@ def parse_pdb_key(key, config_type=ConfigType.convolution):
 
 
 #NOTE: only conv support, BN support TBD
-def parse_2d(key, group_count):  #pylint: disable=too-many-locals
+def parse_2d(key, group_count, config_type):  #pylint: disable=too-many-locals
   """parse key values for 2d network"""
   #sample 2D
   #256-199-335-1x1-512-100-168-2-0x0-2x2-1x1-0-NCHW-FP32-F
+  print(tmp)
   tmp = key.split('-')
+
+  if config_type == ConfigType.convolution:
+    return parse_2d_conv(key, group_count, tmp)
+  elif config_type == ConfigType.batch_norm:
+    return parse_2d_bn(key, group_count, tmp)
+
+
+def parse_2d_conv(key, group_count, tmp):
+  """Parse 2D conv keys"""
   #len(tensor) could be 1 or 3
   #<input tensor><weight tensor><output tensor>
   if len(tmp) == 15:
@@ -141,14 +152,78 @@ def parse_2d(key, group_count):  #pylint: disable=too-many-locals
   return vals_2d, precision, direction
 
 
+def parse_2d_bn(key, group_count, tmp):
+  """Parse 2D BN keys"""
+  #len(tensor) could be 1 or 3
+  #<input tensor><weight tensor><output tensor>
+  print(f"len tmp: {tmp}")
+  print('len tmp: %s', len(tmp))
+  for i in range(len(tmp)):
+    print(i, tmp[i])
+
+  if len(tmp) == 15:
+    #same layout for all tensors
+    in_layout = tmp[12]
+    fil_layout = tmp[12]
+    out_layout = tmp[12]
+  else:
+    #when len=17 all 3 tensor are specified
+    in_layout = tmp[12]
+    fil_layout = tmp[13]
+    out_layout = tmp[14]
+
+  direction = tmp[len(tmp) - 1]
+  precision = tmp[len(tmp) - 2]
+
+  if direction == 'F':
+    in_channels = tmp[0]
+    in_h = tmp[1]
+    in_w = tmp[2]
+    out_channels = tmp[4]
+    # tmp[5], tmp[6]:  outputsize is ignored in db
+  else:
+    out_channels = tmp[0]
+    in_h = tmp[5]
+    in_w = tmp[6]
+    in_channels = tmp[4]
+
+  fil_h, fil_w = tmp[3].split('x')
+  batchsize = tmp[7]
+  pad_h, pad_w = tmp[8].split('x')
+  conv_stride_h, conv_stride_w = tmp[9].split('x')
+  dilation_h, dilation_w = tmp[10].split('x')
+  # unused bias = tmp[11]
+  # unused layout = tmp[12]
+  #precision = tmp[13]
+
+  vals_2d = [
+      pad_h, pad_w, out_channels, fil_w, fil_h, dilation_w, dilation_h,
+      conv_stride_w, conv_stride_h, in_channels, in_w, in_h, batchsize,
+      group_count, in_layout, out_layout, fil_layout
+  ]
+
+  return vals_2d, precision, direction
+
+
 #NOTE: only conv support, BN support TBD
-def parse_3d(key, group_count):  #pylint: disable=too-many-locals
+def parse_3d(key, group_count, config_type):  #pylint: disable=too-many-locals
   """parse key values for 3d network"""
   #sample 3D
   #256-16-56-56-1x1x1-64-16-56-56-4-0x0x0-1x1x1-1x1x1-0-NCHW-FP32-F=
   tmp = key.split('-')
   #len(tensor) could be 1 or 3
   #<input tensor><weight tensor><output tensor>
+
+  if config_type == ConfigType.convolution:
+    return parse_3d_conv(key, group_count, tmp)
+  elif config_type == ConfigType.batch_norm:
+    return parse_3d_bn(key, group_count, tmp)
+  else:
+    raise CustomError(f"{config_type} not supported in parse_3d")
+
+
+def parse_3d_conv(key, group_count, tmp):
+  """Parse 3D conv keys"""
   if len(tmp) == 17:
     #same layout for all tensors
     in_layout = tmp[14]
@@ -192,6 +267,11 @@ def parse_3d(key, group_count):  #pylint: disable=too-many-locals
   ]
 
   return vals_3d, precision, direction
+
+
+def parse_3d_bn(key, group_count, tmp):
+  """Parse 3D BN keys"""
+  raise ValueError("3D BN pdb keys parsing not yet implemented")
 
 
 #DEPRECATED
