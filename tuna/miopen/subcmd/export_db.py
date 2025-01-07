@@ -415,6 +415,7 @@ def export_kdb(dbt: MIOpenDBTables,
   return write_kdb(args.arch, args.num_cu, kern_db, logger, args.filename)
 
 
+#deprecated
 def create_sqlite_tables(arch, num_cu, filename=None):
   """create sqlite3 tables"""
   local_path = get_filename(arch, num_cu, filename, False, DB_Type.PERF_DB)
@@ -450,6 +451,7 @@ def create_sqlite_tables(arch, num_cu, filename=None):
   return cnx, local_path
 
 
+#deprecated
 def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
   """insert perf_db entry into sqlite"""
   perf_db_dict = perf_db_entry.to_dict()
@@ -465,9 +467,10 @@ def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
   return perf_db_dict
 
 
+#deprecated
 def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
                     total_entries, logger: logging.Logger):
-  """Analyze perf_dv entry"""
+  """Analyze perf_db entry"""
   if cfg_entry.id in cfg_map:
     ins_cfg_id = cfg_map[cfg_entry.id]
   else:
@@ -486,6 +489,7 @@ def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
                 pdb_dict)
 
 
+#deprecated
 def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
                logger: logging.Logger):
   """ export perf db from mysql to sqlite """
