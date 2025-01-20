@@ -45,6 +45,7 @@ from tuna.miopen.db.solver import get_id_solvers
 from tuna.utils.logger import setup_logger
 from tuna.miopen.utils.analyze_parse_db import get_config_sqlite, insert_solver_sqlite
 from tuna.miopen.utils.analyze_parse_db import get_sqlite_cfg_dict
+from tuna.miopen.utils.config_type import ConfigType
 from tuna.miopen.utils.metadata import INVERS_DIR_MAP
 from tuna.miopen.parse_miopen_args import get_export_db_parser
 from tuna.miopen.worker.fin_utils import compose_config_obj
@@ -100,21 +101,26 @@ def get_filename(arch: str,
   return final_name
 
 
-def fin_net_cfg_job(cfg_lst):
+def fin_net_cfg_job(cfg_lst,
+                    logger,
+                    config_type: ConfigType = ConfigType.convolution):
   """Construct a fin network_config job from a config
   """
   #arch and num_cu are required by fin, but unused for this command
   job_list = []
-  for config in cfg_lst:
-    job = {
-        "steps": ["network_config"],
-        "arch": 'gfx908',
-        "num_cu": 120,
-        "config_tuna_id": config.id,
-        "direction": int(INVERS_DIR_MAP[config.direction]),
-        "config": compose_config_obj(config)
-    }
-    job_list.append(job)
+  if config_type == ConfigType.convolution:
+    for config in cfg_lst:
+      job = {
+          "steps": ["network_config"],
+          "arch": 'gfx908',
+          "num_cu": 120,
+          "config_tuna_id": config.id,
+          "direction": int(INVERS_DIR_MAP[config.direction]),
+          "config": compose_config_obj(config)
+      }
+      job_list.append(job)
+  else:
+    logger.error(f"Config type not implemented: {config_type}")
 
   return job_list
 
@@ -124,8 +130,8 @@ def fin_db_key(config_lst, logger):
   _, fin_ifile = tempfile.mkstemp(suffix='.json')
   _, fin_ofile = tempfile.mkstemp(suffix='.json')
 
-  with open(fin_ifile, 'w') as in_file:
-    in_file.write(json.dumps(fin_net_cfg_job(config_lst), indent=2))
+  with open(fin_ifile, 'w') as in_file:  # pylint: disable=unspecified-encoding
+    in_file.write(json.dumps(fin_net_cfg_job(config_lst, logger), indent=2))
 
   fin_cmd = f"/opt/rocm/bin/fin -i {fin_ifile} -o {fin_ofile}"
   logger.info('Executing fin cmd: %s', fin_cmd)
@@ -136,7 +142,7 @@ def fin_db_key(config_lst, logger):
   with open(fin_ofile, 'r') as out_file:  # pylint: disable=unspecified-encoding
     try:
       result = json.load(out_file)
-    except Exception as err:
+    except Exception as err:  # pylint: disable=broad-except
       logger.error('Unable to load fin json file %s', err)
       for line in out_file:
         logger.error(line)
@@ -409,6 +415,7 @@ def export_kdb(dbt: MIOpenDBTables,
   return write_kdb(args.arch, args.num_cu, kern_db, logger, args.filename)
 
 
+#deprecated
 def create_sqlite_tables(arch, num_cu, filename=None):
   """create sqlite3 tables"""
   local_path = get_filename(arch, num_cu, filename, False, DB_Type.PERF_DB)
@@ -444,6 +451,7 @@ def create_sqlite_tables(arch, num_cu, filename=None):
   return cnx, local_path
 
 
+#deprecated
 def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
   """insert perf_db entry into sqlite"""
   perf_db_dict = perf_db_entry.to_dict()
@@ -459,9 +467,10 @@ def insert_perf_db_sqlite(cnx, perf_db_entry, ins_cfg_id):
   return perf_db_dict
 
 
+#deprecated
 def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
                     total_entries, logger: logging.Logger):
-  """Analyze perf_dv entry"""
+  """Analyze perf_db entry"""
   if cfg_entry.id in cfg_map:
     ins_cfg_id = cfg_map[cfg_entry.id]
   else:
@@ -480,6 +489,7 @@ def populate_sqlite(cfg_map, num_perf, cnx, perf_db_entry, cfg_entry,
                 pdb_dict)
 
 
+#deprecated
 def export_pdb(dbt: MIOpenDBTables, args: argparse.Namespace,
                logger: logging.Logger):
   """ export perf db from mysql to sqlite """
@@ -553,7 +563,7 @@ def write_pdb(arch, num_cu, ocl, perf_db, filename=None):
 
 
 def export_pdb_txt(dbt: MIOpenDBTables, args: argparse.Namespace,
-               logger: logging.Logger):
+                   logger: logging.Logger):
   """ export perf db from mysql to txt file """
   query = get_pdb_query(dbt, args, logger)
   miopen_pdb = build_miopen_pdb(query, logger)
