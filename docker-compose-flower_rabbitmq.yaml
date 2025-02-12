@@ -29,6 +29,6 @@ services:
         - TUNA_CELERY_BROKER_HOST=${TUNA_CELERY_BROKER_HOST}
         - TUNA_CELERY_BROKER_PORT=${TUNA_CELERY_BROKER_PORT}
         #purge offline workers older than 1 day in seconds
-    command: "celery -A tuna.celery_app.celery_app flower --debug --persistent=True --purge_offline_workers=10800 --broker_api=http://${TUNA_CELERY_BROKER_USER}:${TUNA_CELERY_BROKER_PWD}@{TUNA_CELERY_BROKER_HOST}:{TUNA_CELERY_BROKER_PORT}/api/vhost --port=5555"
+    command: "celery -A tuna.celery_app.celery_app flower --debug --persistent=True --purge_offline_workers=10800 --broker_api=http://${TUNA_CELERY_BROKER_USER}:${TUNA_CELERY_BROKER_PWD}@${TUNA_CELERY_BROKER_HOST}:${TUNA_CELERY_BROKER_PORT}/api/vhost --port=5555"
     network_mode: "host"
 
