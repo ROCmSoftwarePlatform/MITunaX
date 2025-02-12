@@ -31,6 +31,7 @@ def initSession(){
   {
     def margs = "-a ${params.arch} -n ${params.num_cu}"
     sh "docker run ${docker_args} ${tuna_docker_name} ./tuna/go_fish.py miopen --init_session -l ${job_label} ${margs} --docker_name ${base_image}"
+    tuna_docker.push()
   }
   else
   {

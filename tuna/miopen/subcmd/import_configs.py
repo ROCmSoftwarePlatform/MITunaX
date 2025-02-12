@@ -350,25 +350,25 @@ def run_import_configs(args: argparse.Namespace,
   if args.add_benchmark:
     add_benchmark(args, dbt, logger)
     return True
-  if not (args.tag and args.framework and args.fw_version and args.model and
-          args.md_version):
-    logger.error(
-        """Tag, framework & version, model & version arguments is required to \
-                import configurations""")
-    return False
+  #if not (args.tag and args.framework and args.fw_version and args.model and
+  #        args.md_version):
+  #  logger.error(
+  #      """Tag, framework & version, model & version arguments is required to \
+  #              import configurations""")
+  #  return False
 
-  mid, fid = get_database_id(args.framework, args.fw_version, args.model,
-                             args.md_version, dbt, logger)
-  if mid is None or fid is None:
-    logger.error(
-        'Please use --add_model and --add_framework to add new model and framework'
-    )
-    return False
+  #mid, fid = get_database_id(args.framework, args.fw_version, args.model,
+  #                           args.md_version, dbt, logger)
+  #if mid is None or fid is None:
+  #  logger.error(
+  #      'Please use --add_model and --add_framework to add new model and framework'
+  #  )
+  #  return False
 
   set_import_cfg_batches(args)
   counts = import_cfgs(args, dbt, logger)
   #tagging imported configs with benchmark
-  add_benchmark(args, dbt, logger)
+  #add_benchmark(args, dbt, logger)
 
   logger.info('New configs added: %u', counts['cnt_configs'])
   if args.tag or args.tag_only:
